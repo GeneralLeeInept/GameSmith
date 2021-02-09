@@ -1,0 +1,85 @@
+﻿<?xml version="1.0" encoding="utf-8"?>
+<Project ToolsVersion="4.0" xmlns="http://schemas.microsoft.com/developer/msbuild/2003">
+  <ItemGroup>
+    <Filter Include="source">
+      <UniqueIdentifier>{4FC737F1-C7A5-4376-A066-2A32D752A2FF}</UniqueIdentifier>
+      <Extensions>cpp;c;cc;cxx;c++;cppm;ixx;def;odl;idl;hpj;bat;asm;asmx;h;hh;hpp;hxx;h++;hm;inl;inc;ipp;xsd</Extensions>
+    </Filter>
+    <Filter Include="source\render">
+      <UniqueIdentifier>{5d9c3ed2-131b-497e-bb8d-185f6a073187}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\render\opengl">
+      <UniqueIdentifier>{aa0e3a17-85b5-4083-b181-95181c0b0cae}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\render\opengl\glad">
+      <UniqueIdentifier>{8cfc19a6-5f87-4382-bae8-8920b6ac5b3f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\core">
+      <UniqueIdentifier>{e4cc76cf-b1fd-4f6a-8e2b-ea1ecd2e40ef}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\platform">
+      <UniqueIdentifier>{38b4df51-2795-407a-af55-c8de596c6b86}</UniqueIdentifier>
+    </Filter>
+  </ItemGroup>
+  <ItemGroup>
+    <ClCompile Include="..\..\source\gspch.cpp">
+      <Filter>source</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\platform\window_win.cpp">
+      <Filter>source\platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\platform\winmain.cpp">
+      <Filter>source\platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\gamesmith\core\debug.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\gamesmith\renderer\opengl\glad\glad.c">
+      <Filter>source\render\opengl\glad</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\gamesmith\core\log.cpp">
+      <Filter>source\core</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\gamesmith\renderer\opengl\renderer_gl.cpp">
+      <Filter>source\render\opengl</Filter>
+    </ClCompile>
+  </ItemGroup>
+  <ItemGroup>
+    <ClInclude Include="..\..\source\gamesmith.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gspch.h">
+      <Filter>source</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\platform\window_win.h">
+      <Filter>source\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\core\config.h">
+      <Filter>source\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\core\core.h">
+      <Filter>source\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\core\debug.h">
+      <Filter>source\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\renderer\opengl\glad\glad.h">
+      <Filter>source\render\opengl\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\renderer\opengl\glad\khrplatform.h">
+      <Filter>source\render\opengl\glad</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\core\log.h">
+      <Filter>source\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\renderer\opengl\wglext.h">
+      <Filter>source\render\opengl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\renderer\opengl\renderer_gl.h">
+      <Filter>source\render\opengl</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\core\window.h">
+      <Filter>source\core</Filter>
+    </ClInclude>
+  </ItemGroup>
+</Project>

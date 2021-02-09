@@ -1,0 +1,6 @@
+_builds/
+*.VC.db
+*.VC.opendb
+*.vcxproj.user
+.vscode/
+.vs/
