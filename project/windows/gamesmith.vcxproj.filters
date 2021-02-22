@@ -20,16 +20,19 @@
     <Filter Include="source\platform">
       <UniqueIdentifier>{38b4df51-2795-407a-af55-c8de596c6b86}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source\imgui">
+      <UniqueIdentifier>{e4f78dcc-2199-4d62-85a8-b56cf75f8dc6}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\events">
+      <UniqueIdentifier>{b874ac2f-8972-4a57-a98c-29899208966e}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="source\input">
+      <UniqueIdentifier>{cabd3d19-2dda-4598-a7f4-a62a078aa3ed}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\gspch.cpp">
       <Filter>source</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\platform\window_win.cpp">
-      <Filter>source\platform</Filter>
-    </ClCompile>
-    <ClCompile Include="..\..\source\platform\winmain.cpp">
-      <Filter>source\platform</Filter>
     </ClCompile>
     <ClCompile Include="..\..\source\gamesmith\core\debug.cpp">
       <Filter>source\core</Filter>
@@ -43,6 +46,15 @@
     <ClCompile Include="..\..\source\gamesmith\renderer\opengl\renderer_gl.cpp">
       <Filter>source\render\opengl</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\gamesmith\imgui\imgui.cpp">
+      <Filter>source\imgui</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\platform\windows\window_win.cpp">
+      <Filter>source\platform</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\platform\windows\winmain.cpp">
+      <Filter>source\platform</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\gamesmith.h">
@@ -50,9 +62,6 @@
     </ClInclude>
     <ClInclude Include="..\..\source\gspch.h">
       <Filter>source</Filter>
-    </ClInclude>
-    <ClInclude Include="..\..\source\platform\window_win.h">
-      <Filter>source\platform</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\gamesmith\core\config.h">
       <Filter>source\core</Filter>
@@ -80,6 +89,18 @@
     </ClInclude>
     <ClInclude Include="..\..\source\gamesmith\core\window.h">
       <Filter>source\core</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\events\event_queue.h">
+      <Filter>source\events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\events\event.h">
+      <Filter>source\events</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\input\keyboard.h">
+      <Filter>source\input</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\platform\windows\window_win.h">
+      <Filter>source\platform</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

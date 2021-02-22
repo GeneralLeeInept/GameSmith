@@ -513,7 +513,6 @@ bool RendererGL::Init(const Window* window)
     glDebugMessageCallback(DebugMessageCallback, nullptr);
 #endif
 
-    gWglHelper.MakeCurrent(nullptr, nullptr);
     hwnd_ = hwnd;
     dc_ = dc;
     rc_ = glrc;
@@ -524,13 +523,11 @@ bool RendererGL::Init(const Window* window)
 
 void RendererGL::BeginFrame()
 {
-    gWglHelper.MakeCurrent(dc_, rc_);
 }
 
 void RendererGL::EndFrame()
 {
     SwapBuffers(dc_);
-    gWglHelper.MakeCurrent(nullptr, nullptr);
 }
 
 } // namespace GameSmith

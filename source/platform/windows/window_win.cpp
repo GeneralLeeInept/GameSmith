@@ -107,22 +107,14 @@ LRESULT CALLBACK gsWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
     GameSmith::Window* window = (GameSmith::Window*)GetPropW(hwnd, L"GameSmithWindow");
 
-    //switch (msg)
-    //{
-    //    case WM_ACTIVATEAPP:
-    //    {
-    //        break;
-    //    }
-    //    case WM_CLOSE:
-    //    {
-    //        return 0;
-    //    }
-    //    case WM_DESTROY:
-    //    {
-    //        PostQuitMessage(0);
-    //        return 0;
-    //    }
-    //}
+    switch (msg)
+    {
+        case WM_ACTIVATEAPP:
+        {
+           //window->HandleEvent()
+            break;
+        }
+    }
 
     return DefWindowProc(hwnd, msg, wparam, lparam);
 }
