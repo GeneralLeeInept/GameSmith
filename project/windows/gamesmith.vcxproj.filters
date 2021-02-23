@@ -29,6 +29,9 @@
     <Filter Include="source\input">
       <UniqueIdentifier>{cabd3d19-2dda-4598-a7f4-a62a078aa3ed}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source\render\vulkan">
+      <UniqueIdentifier>{0b35dcb2-34fe-4541-851e-3e16a438db01}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\gspch.cpp">
@@ -101,6 +104,9 @@
     </ClInclude>
     <ClInclude Include="..\..\source\platform\windows\window_win.h">
       <Filter>source\platform</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\platform\vulkan\renderer_vk.h">
+      <Filter>source\render\vulkan</Filter>
     </ClInclude>
   </ItemGroup>
 </Project>

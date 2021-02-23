@@ -18,11 +18,4 @@
 
 #if defined(_WIN32)
 #define GS_PLATFORM_WINDOWS
-
-#if defined(GS_RELEASE)
-#define GS_BREAKPOINT() ((void)0)
-#else
-#define GS_BREAKPOINT() DebugBreak()
-#endif
-
 #endif

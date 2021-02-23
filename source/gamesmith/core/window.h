@@ -12,6 +12,8 @@ public:
 
     virtual ~Window() = default;
 
+    virtual bool IsValid() const = 0;
+
     virtual uint32_t GetWidth() const = 0;
     virtual uint32_t GetHeight() const = 0;
 

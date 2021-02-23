@@ -66,6 +66,11 @@ Window* Window::CreateApplicationWindow(const std::string& title, uint32_t width
     return window;
 }
 
+bool PlatformWindow::IsValid() const
+{
+    return !wantClose_;
+}
+
 uint32_t PlatformWindow::GetWidth() const
 {
     return width_;
@@ -105,7 +110,7 @@ std::wstring gsUtf8ToWchar(const std::string& utf8)
 
 LRESULT CALLBACK gsWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    GameSmith::Window* window = (GameSmith::Window*)GetPropW(hwnd, L"GameSmithWindow");
+    GameSmith::PlatformWindow* window = (GameSmith::PlatformWindow*)GetPropW(hwnd, L"GameSmithWindow");
 
     switch (msg)
     {
@@ -113,6 +118,11 @@ LRESULT CALLBACK gsWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
         {
            //window->HandleEvent()
             break;
+        }
+        case WM_CLOSE:
+        {
+            window->wantClose_ = true;
+            return 0L;
         }
     }
 

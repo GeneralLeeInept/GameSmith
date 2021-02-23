@@ -10,12 +10,16 @@ class PlatformWindow : public Window
 public:
     PlatformWindow() = default;
 
+    bool IsValid() const override;
+
     uint32_t GetWidth() const override;
     uint32_t GetHeight() const override;
 
     void PumpMessages() override;
 
     NativeHandle GetNativeHandle() const override;
+
+    bool wantClose_{};
 
 protected:
     HWND hwnd_{};
