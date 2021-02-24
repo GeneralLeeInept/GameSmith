@@ -109,4 +109,12 @@
       <Filter>source\render\vulkan</Filter>
     </ClInclude>
   </ItemGroup>
+  <ItemGroup>
+    <None Include="..\..\source\platform\vulkan\shaders\triangle.vert.glsl">
+      <Filter>source\render\vulkan</Filter>
+    </None>
+    <None Include="..\..\source\platform\vulkan\shaders\triangle.frag.glsl">
+      <Filter>source\render\vulkan</Filter>
+    </None>
+  </ItemGroup>
 </Project>

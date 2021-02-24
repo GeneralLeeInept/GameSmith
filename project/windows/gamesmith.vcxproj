@@ -140,6 +140,28 @@
     <ClInclude Include="..\..\source\platform\vulkan\renderer_vk.h" />
     <ClInclude Include="..\..\source\platform\windows\window_win.h" />
   </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\source\platform\vulkan\shaders\triangle.vert.glsl">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Development|x64'">$(VULKAN_SDK)\Bin\glslc.exe -fshader-stage=vert %(Identity) -o %(Filename).spv --target-env=vulkan1.2</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Development|x64'">%(Filename).spv</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(VULKAN_SDK)\Bin\glslc.exe -fshader-stage=vert %(Identity) -o %(Filename).spv --target-env=vulkan1.2</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).spv</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(VULKAN_SDK)\Bin\glslc.exe -fshader-stage=vert %(Identity) -o %(Filename).spv --target-env=vulkan1.2</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename).spv</Outputs>
+    </CustomBuild>
+  </ItemGroup>
+  <ItemGroup>
+    <CustomBuild Include="..\..\source\platform\vulkan\shaders\triangle.frag.glsl">
+      <FileType>Document</FileType>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Development|x64'">$(VULKAN_SDK)\Bin\glslc.exe -fshader-stage=frag %(Identity) -o %(Filename).spv --target-env=vulkan1.2</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Development|x64'">%(Filename).spv</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">$(VULKAN_SDK)\Bin\glslc.exe -fshader-stage=frag %(Identity) -o %(Filename).spv --target-env=vulkan1.2</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">%(Filename).spv</Outputs>
+      <Command Condition="'$(Configuration)|$(Platform)'=='Release|x64'">$(VULKAN_SDK)\Bin\glslc.exe -fshader-stage=frag %(Identity) -o %(Filename).spv --target-env=vulkan1.2</Command>
+      <Outputs Condition="'$(Configuration)|$(Platform)'=='Release|x64'">%(Filename).spv</Outputs>
+    </CustomBuild>
+  </ItemGroup>
   <Import Project="$(VCTargetsPath)\Microsoft.Cpp.targets" />
   <ImportGroup Label="ExtensionTargets">
   </ImportGroup>
