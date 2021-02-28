@@ -1,14 +1,15 @@
 #include "gspch.h"
 
-#include "gamesmith/core/core.h"
-#include "gamesmith/core/debug.h"
-#include "gamesmith/core/log.h"
-#include "gamesmith/core/window.h"
-
 #ifdef GS_PLATFORM_WINDOWS
 #define VK_USE_PLATFORM_WIN32_KHR
 #endif
 #include <vulkan/vulkan.h>
+
+#include "gamesmith/core/core.h"
+#include "gamesmith/core/debug.h"
+#include "gamesmith/core/log.h"
+#include "gamesmith/core/window.h"
+#include "platform/vulkan/shader_module.h"
 
 #include <filesystem>
 #include <fstream>
@@ -356,23 +357,6 @@ VkSemaphore gsCreateSemaphore(VkDevice device)
     return semaphore;
 }
 
-VkShaderModule LoadShaderModule(VkDevice device, const std::string& path)
-{
-    std::ifstream fs(path, std::ios::in | std::ios::binary);
-    GS_ASSERT(fs);
-    auto size = std::filesystem::file_size(path);
-    std::vector<uint8_t> data(size);
-    fs.read((char*)data.data(), size);
-
-    VkShaderModuleCreateInfo createInfo{ VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO };
-    createInfo.codeSize = size;
-    createInfo.pCode = (uint32_t*)data.data();
-
-    VkShaderModule shaderModule{};
-    VK_CHECK_RESULT(vkCreateShaderModule(device, &createInfo, nullptr, &shaderModule));
-    return shaderModule;
-}
-
 int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     ComHelper comHelper;
@@ -422,19 +406,19 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     CreateSwapchain(physicalDevice, device, surface, surfaceFormat, renderPass, commandPool, swapchain);
     GS_ASSERT(swapchain.swapchain);
 
-    VkShaderModule vertexShader = LoadShaderModule(device, "triangle.vert.spv");
-    VkShaderModule fragmentShader = LoadShaderModule(device, "triangle.frag.spv");
+    GameSmith::Vulkan::ShaderModule vertexShader = GameSmith::Vulkan::LoadShaderModule(device, "triangle.vert.spv");
+    GameSmith::Vulkan::ShaderModule fragmentShader = GameSmith::Vulkan::LoadShaderModule(device, "triangle.frag.spv");
 
     VkPipelineShaderStageCreateInfo stages[2]{};
     stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].stage = VK_SHADER_STAGE_VERTEX_BIT;
-    stages[0].module = vertexShader;
-    stages[0].pName = "main";
+    stages[0].stage = vertexShader.stage;
+    stages[0].module = vertexShader.shader;
+    stages[0].pName = vertexShader.entryPoint.c_str();
 
     stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].stage = VK_SHADER_STAGE_FRAGMENT_BIT;
-    stages[1].module = fragmentShader;
-    stages[1].pName = "main";
+    stages[1].stage = fragmentShader.stage;
+    stages[1].module = fragmentShader.shader;
+    stages[1].pName = fragmentShader.entryPoint.c_str();
 
     VkPipelineVertexInputStateCreateInfo vertexInputState{ VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
 
@@ -588,8 +572,8 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
 
     vkDestroyPipeline(device, pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
-    vkDestroyShaderModule(device, fragmentShader, nullptr);
-    vkDestroyShaderModule(device, vertexShader, nullptr);
+    vkDestroyShaderModule(device, fragmentShader.shader, nullptr);
+    vkDestroyShaderModule(device, vertexShader.shader, nullptr);
     DestroySwapchain(device, swapchain);
     vkDestroyCommandPool(device, commandPool, nullptr);
     vkDestroyRenderPass(device, renderPass, nullptr);

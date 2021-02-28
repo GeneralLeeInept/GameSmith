@@ -58,6 +58,9 @@
     <ClCompile Include="..\..\source\platform\windows\winmain.cpp">
       <Filter>source\platform</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\platform\vulkan\shader_module.cpp">
+      <Filter>source\render\vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\gamesmith.h">
@@ -108,13 +111,12 @@
     <ClInclude Include="..\..\source\platform\vulkan\renderer_vk.h">
       <Filter>source\render\vulkan</Filter>
     </ClInclude>
+    <ClInclude Include="..\..\source\platform\vulkan\shader_module.h">
+      <Filter>source\render\vulkan</Filter>
+    </ClInclude>
   </ItemGroup>
   <ItemGroup>
-    <None Include="..\..\source\platform\vulkan\shaders\triangle.vert.glsl">
-      <Filter>source\render\vulkan</Filter>
-    </None>
-    <None Include="..\..\source\platform\vulkan\shaders\triangle.frag.glsl">
-      <Filter>source\render\vulkan</Filter>
-    </None>
+    <CustomBuild Include="..\..\source\platform\vulkan\shaders\triangle.vert.glsl" />
+    <CustomBuild Include="..\..\source\platform\vulkan\shaders\triangle.frag.glsl" />
   </ItemGroup>
 </Project>
