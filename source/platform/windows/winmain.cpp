@@ -57,6 +57,8 @@ struct Mesh
 {
     uint32_t vertexCount;
     Buffer vertexBuffer;
+    uint32_t indexCount;
+    Buffer indexBuffer;
 };
 
 VkInstance CreateInstance()
@@ -463,16 +465,25 @@ std::string gsWcharToUtf8(const wchar_t* wstring)
     return utf8;
 }
 
-Buffer CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t size, uint32_t graphicsQueueFamilyIndex)
+using QueueFamilyIndices = std::initializer_list<uint32_t>;
+
+Buffer CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t size, VkBufferUsageFlags usage, QueueFamilyIndices queues)
 {
     Buffer buffer{};
 
+    std::vector<uint32_t> queueFamilyIndices{};
+
+    for (auto& queueIndex : queues)
+    {
+        queueFamilyIndices.push_back(queueIndex);
+    }
+
     VkBufferCreateInfo createInfo{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
     createInfo.size = size;
-    createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    createInfo.usage = usage;
     createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.queueFamilyIndexCount = 1;
-    createInfo.pQueueFamilyIndices = &graphicsQueueFamilyIndex;
+    createInfo.queueFamilyIndexCount = uint32_t(queueFamilyIndices.size());
+    createInfo.pQueueFamilyIndices = queueFamilyIndices.data();
 
     VK_CHECK_RESULT(vkCreateBuffer(device, &createInfo, nullptr, &buffer.buffer));
 
@@ -514,35 +525,92 @@ void DestroyBuffer(VkDevice device, Buffer& buffer)
     buffer = Buffer{};
 }
 
+struct MeshVertexHasher
+{
+    static uint64_t floatbits(float f, uint8_t numbits)
+    {
+        uint32_t uf = *(uint32_t*)(&f);
+        uint8_t shift = 23 - (numbits - 1);
+        uint64_t r = 0ull;
+        r |= (uf & 0x80000000) >> (31 - numbits);
+        r |= (uf & 0x007fffff) >> (23 - numbits);
+        return r;
+    }
+
+    uint64_t operator()(const MeshVertex& v) const
+    {
+        // 12-bits x, 12-bits y, 12-bits z, 10-bits nx, 9-bits ny, 9-bits nz
+        uint64_t h = (floatbits(v.x, 12) << 52) | 
+            (floatbits(v.y, 12) << 40) |
+            (floatbits(v.z, 12) << 28) |
+            (floatbits(v.nx, 10) << 18) |
+            (floatbits(v.ny, 9) << 9) |
+            (floatbits(v.nz, 9));
+
+        return h;
+    }
+};
+
+struct MeshVertexComparer
+{
+    bool operator()(const MeshVertex& lhs, const MeshVertex& rhs) const
+    {
+        return memcmp(&lhs, &rhs, sizeof(MeshVertex)) == 0;
+    }
+};
+
 Mesh LoadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t graphicsQueueFamilyIndex, const std::string& path)
 {
-    Mesh mesh{};
-
     GameSmith::ObjFile objFile{};
     objFile.Load(path);
-    mesh.vertexCount = uint32_t(objFile.triangles.size()) * 3;
-    mesh.vertexBuffer = CreateVertexBuffer(physicalDevice, device, mesh.vertexCount * sizeof(MeshVertex), graphicsQueueFamilyIndex);
-
     GameSmith::ObjVertex* vertices = objFile.vertices.data();
     GameSmith::ObjNormal* normals = objFile.normals.data();
-    MeshVertex* v = (MeshVertex*)mesh.vertexBuffer.mappedMemory;
+
+    std::unordered_map<MeshVertex, size_t, MeshVertexHasher, MeshVertexComparer> vbdatalookup;
+    std::vector<MeshVertex> vbdata{};
+    std::vector<uint32_t> ibdata{};
 
     for (GameSmith::ObjTri& tri : objFile.triangles)
     {
         for (int i = 0; i < 3; ++i)
         {
+            MeshVertex v{};
             int32_t vi = tri.v[i];
             int32_t ni = tri.n[i];
-            v[i].x = vertices[vi - 1].x;
-            v[i].y = vertices[vi - 1].y;
-            v[i].z = (vertices[vi - 1].z) * 0.5f + 0.5f;
-            v[i].nx = (ni == -1) ? 0.f : normals[ni - 1].x;
-            v[i].ny = (ni == -1) ? 0.f : normals[ni - 1].y;
-            v[i].nz = (ni == -1) ? 1.f : normals[ni - 1].z;
-        }
+            v.x = vertices[vi - 1].x;
+            v.y = vertices[vi - 1].y;
+            v.z = (vertices[vi - 1].z) * 0.5f + 0.5f;
+            v.nx = (ni == -1) ? 0.f : normals[ni - 1].x;
+            v.ny = (ni == -1) ? 0.f : normals[ni - 1].y;
+            v.nz = (ni == -1) ? 1.f : normals[ni - 1].z;
 
-        v += 3;
+            auto it = vbdatalookup.find(v);
+            size_t index{};
+
+            if (it == vbdatalookup.end())
+            {
+                index = vbdata.size();
+                vbdatalookup.emplace(v, index);
+                vbdata.push_back(v);
+            }
+            else
+            {
+                index = it->second;
+            }
+
+            ibdata.push_back(uint32_t(index));
+        }
     }
+
+    Mesh mesh{};
+
+    mesh.vertexCount = uint32_t(vbdata.size());
+    mesh.vertexBuffer = CreateBuffer(physicalDevice, device, mesh.vertexCount * sizeof(MeshVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, { graphicsQueueFamilyIndex });
+    memcpy(mesh.vertexBuffer.mappedMemory, vbdata.data(), vbdata.size() * sizeof(MeshVertex));
+
+    mesh.indexCount = uint32_t(ibdata.size());
+    mesh.indexBuffer = CreateBuffer(physicalDevice, device, mesh.indexCount * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, { graphicsQueueFamilyIndex });
+    memcpy(mesh.indexBuffer.mappedMemory, ibdata.data(), ibdata.size() * sizeof(uint32_t));
 
     return mesh;
 }
@@ -550,6 +618,7 @@ Mesh LoadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t grap
 void DestroyMesh(VkDevice device, Mesh& mesh)
 {
     DestroyBuffer(device, mesh.vertexBuffer);
+    DestroyBuffer(device, mesh.indexBuffer);
 }
 
 int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
@@ -679,7 +748,8 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
 
         VkDeviceSize offsets{};
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, &offsets);
-        vkCmdDraw(commandBuffer, mesh.vertexCount, 1, 0, 0);
+        vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
+        vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1, 0, 0, 0);
         
         vkCmdEndRenderPass(commandBuffer);
 
