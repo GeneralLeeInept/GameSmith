@@ -15,6 +15,12 @@
 #include <filesystem>
 #include <fstream>
 
+#ifndef GS_RELEASE
+#define GS_VULKAN_VALIDATION 1
+#else
+#define GS_VULKAN_VALIDATION 0
+#endif
+
 #define VK_CHECK_RESULT(call)            \
     do                                   \
     {                                    \
@@ -61,6 +67,14 @@ struct Mesh
     Buffer indexBuffer;
 };
 
+VkBool32 VKAPI_CALL DebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+                                                const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
+{
+    GS_WARN("%s", pCallbackData->pMessage);
+    GS_ASSERT((messageSeverity & VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT) == 0);
+    return VK_FALSE;
+}
+
 VkInstance CreateInstance()
 {
     VkApplicationInfo applicationInfo{ VK_STRUCTURE_TYPE_APPLICATION_INFO };
@@ -73,23 +87,41 @@ VkInstance CreateInstance()
     VkInstanceCreateInfo createInfo{ VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO };
     createInfo.pApplicationInfo = &applicationInfo;
 
-#ifndef GS_RELEASE
-    static const char* enabledLayers[] = { "VK_LAYER_KHRONOS_validation" };
-    createInfo.enabledLayerCount = GS_ARRAY_COUNT(enabledLayers);
-    createInfo.ppEnabledLayerNames = enabledLayers;
-#endif
+    std::vector<const char*> enabledExtensions{ VK_KHR_SURFACE_EXTENSION_NAME };
 
-    static const char* enabledExtensions[] = { VK_KHR_SURFACE_EXTENSION_NAME,
 #ifdef GS_PLATFORM_WINDOWS
-                                               VK_KHR_WIN32_SURFACE_EXTENSION_NAME
+    enabledExtensions.push_back(VK_KHR_WIN32_SURFACE_EXTENSION_NAME);
 #endif
-    };
 
-    createInfo.enabledExtensionCount = GS_ARRAY_COUNT(enabledExtensions);
-    createInfo.ppEnabledExtensionNames = enabledExtensions;
+#if GS_VULKAN_VALIDATION
+    enabledExtensions.push_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+#endif
+
+    createInfo.enabledExtensionCount = uint32_t(enabledExtensions.size());
+    createInfo.ppEnabledExtensionNames = enabledExtensions.data();
+
+#if GS_VULKAN_VALIDATION
+    VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{ VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
+    debugCreateInfo.messageSeverity = (VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT |
+                                       VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
+    debugCreateInfo.messageType = (VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT |
+                                   VK_DEBUG_UTILS_MESSAGE_TYPE_PERFORMANCE_BIT_EXT);
+    debugCreateInfo.pfnUserCallback = DebugUtilsMessengerCallback;
+    createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
+#endif
 
     VkInstance instance{};
     VK_CHECK_RESULT(vkCreateInstance(&createInfo, nullptr, &instance));
+
+#if GS_VULKAN_VALIDATION
+    PFN_vkCreateDebugUtilsMessengerEXT CreateDebugUtilsMessengerEXT =
+            (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+    GS_ASSERT(CreateDebugUtilsMessengerEXT);
+
+    VkDebugUtilsMessengerEXT debugMessenger{};
+    VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(instance, &debugCreateInfo, nullptr, &debugMessenger));
+#endif
+
     return instance;
 }
 
@@ -540,12 +572,8 @@ struct MeshVertexHasher
     uint64_t operator()(const MeshVertex& v) const
     {
         // 12-bits x, 12-bits y, 12-bits z, 10-bits nx, 9-bits ny, 9-bits nz
-        uint64_t h = (floatbits(v.x, 12) << 52) | 
-            (floatbits(v.y, 12) << 40) |
-            (floatbits(v.z, 12) << 28) |
-            (floatbits(v.nx, 10) << 18) |
-            (floatbits(v.ny, 9) << 9) |
-            (floatbits(v.nz, 9));
+        uint64_t h = (floatbits(v.x, 12) << 52) | (floatbits(v.y, 12) << 40) | (floatbits(v.z, 12) << 28) | (floatbits(v.nx, 10) << 18) |
+                     (floatbits(v.ny, 9) << 9) | (floatbits(v.nz, 9));
 
         return h;
     }
@@ -553,10 +581,7 @@ struct MeshVertexHasher
 
 struct MeshVertexComparer
 {
-    bool operator()(const MeshVertex& lhs, const MeshVertex& rhs) const
-    {
-        return memcmp(&lhs, &rhs, sizeof(MeshVertex)) == 0;
-    }
+    bool operator()(const MeshVertex& lhs, const MeshVertex& rhs) const { return memcmp(&lhs, &rhs, sizeof(MeshVertex)) == 0; }
 };
 
 Mesh LoadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t graphicsQueueFamilyIndex, const std::string& path)
@@ -605,11 +630,13 @@ Mesh LoadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t grap
     Mesh mesh{};
 
     mesh.vertexCount = uint32_t(vbdata.size());
-    mesh.vertexBuffer = CreateBuffer(physicalDevice, device, mesh.vertexCount * sizeof(MeshVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, { graphicsQueueFamilyIndex });
+    mesh.vertexBuffer = CreateBuffer(physicalDevice, device, mesh.vertexCount * sizeof(MeshVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                                     { graphicsQueueFamilyIndex });
     memcpy(mesh.vertexBuffer.mappedMemory, vbdata.data(), vbdata.size() * sizeof(MeshVertex));
 
     mesh.indexCount = uint32_t(ibdata.size());
-    mesh.indexBuffer = CreateBuffer(physicalDevice, device, mesh.indexCount * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, { graphicsQueueFamilyIndex });
+    mesh.indexBuffer =
+            CreateBuffer(physicalDevice, device, mesh.indexCount * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, { graphicsQueueFamilyIndex });
     memcpy(mesh.indexBuffer.mappedMemory, ibdata.data(), ibdata.size() * sizeof(uint32_t));
 
     return mesh;
@@ -750,7 +777,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         vkCmdBindVertexBuffers(commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, &offsets);
         vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1, 0, 0, 0);
-        
+
         vkCmdEndRenderPass(commandBuffer);
 
         VkImageMemoryBarrier presentBarrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
