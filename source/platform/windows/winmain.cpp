@@ -9,6 +9,7 @@
 #include "gamesmith/core/debug.h"
 #include "gamesmith/core/log.h"
 #include "gamesmith/core/window.h"
+#include "gamesmith/renderer/obj_loader.h"
 #include "platform/vulkan/shader_module.h"
 
 #include <filesystem>
@@ -25,6 +26,37 @@ struct ComHelper
 {
     ComHelper() { CoInitializeEx(0, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE); }
     ~ComHelper() { CoUninitialize(); }
+};
+
+struct Swapchain
+{
+    VkSwapchainKHR swapchain;
+    VkExtent2D extent;
+    std::vector<VkImage> images;
+    std::vector<VkImageView> imageViews;
+    std::vector<VkFramebuffer> framebuffers;
+    std::vector<VkCommandBuffer> commandBuffers;
+    std::vector<VkFence> fences;
+};
+
+struct Buffer
+{
+    VkBuffer buffer;
+    VkDeviceMemory gpuMemory;
+    VkDeviceSize size;
+    void* mappedMemory;
+};
+
+struct MeshVertex
+{
+    float x, y, z;
+    float nx, ny, nz;
+};
+
+struct Mesh
+{
+    uint32_t vertexCount;
+    Buffer vertexBuffer;
 };
 
 VkInstance CreateInstance()
@@ -194,17 +226,6 @@ VkSurfaceFormatKHR ChooseSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfac
     return surfaceFormat;
 }
 
-struct Swapchain
-{
-    VkSwapchainKHR swapchain;
-    VkExtent2D extent;
-    std::vector<VkImage> images;
-    std::vector<VkImageView> imageViews;
-    std::vector<VkFramebuffer> framebuffers;
-    std::vector<VkCommandBuffer> commandBuffers;
-    std::vector<VkFence> fences;
-};
-
 VkSwapchainKHR CreateSwapchain(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkSurfaceFormatKHR surfaceFormat)
 {
     VkSurfaceCapabilitiesKHR surfaceCaps{};
@@ -304,7 +325,11 @@ void DestroySwapchain(VkDevice device, Swapchain& swapchain)
         vkDestroyImageView(device, swapchain.imageViews[i], nullptr);
     }
 
-    vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
+    if (swapchain.swapchain)
+    {
+        vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
+    }
+
     swapchain = Swapchain{};
 }
 
@@ -349,6 +374,78 @@ VkCommandPool CreateCommandPool(VkDevice device, uint32_t queueFamilyIndex)
     return commandPool;
 }
 
+using ShaderList = std::initializer_list<GameSmith::Vulkan::ShaderModule>;
+
+VkPipeline CreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkPipelineLayout layout, ShaderList shaders)
+{
+    std::vector<VkPipelineShaderStageCreateInfo> stages{};
+
+    for (auto& shader : shaders)
+    {
+        VkPipelineShaderStageCreateInfo createInfo{ VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO };
+        createInfo.stage = shader.stage;
+        createInfo.module = shader.shader;
+        createInfo.pName = shader.entryPoint.c_str();
+        stages.push_back(createInfo);
+    }
+
+    VkVertexInputBindingDescription vertexBindingDescriptions[1] = { { 0, sizeof(MeshVertex), VK_VERTEX_INPUT_RATE_VERTEX } };
+    VkVertexInputAttributeDescription vertexAttributeDescriptions[2] = { { 0, 0, VK_FORMAT_R32G32B32_SFLOAT, 0 },
+                                                                         { 1, 0, VK_FORMAT_R32G32B32_SFLOAT, 12 } };
+
+    VkPipelineVertexInputStateCreateInfo vertexInputState{ VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
+    vertexInputState.vertexBindingDescriptionCount = GS_ARRAY_COUNT(vertexBindingDescriptions);
+    vertexInputState.pVertexBindingDescriptions = vertexBindingDescriptions;
+    vertexInputState.vertexAttributeDescriptionCount = GS_ARRAY_COUNT(vertexAttributeDescriptions);
+    vertexInputState.pVertexAttributeDescriptions = vertexAttributeDescriptions;
+
+    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
+    inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+    VkPipelineViewportStateCreateInfo viewportState{ VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
+    viewportState.viewportCount = 1;
+    viewportState.scissorCount = 1;
+
+    VkPipelineRasterizationStateCreateInfo rasterizationState{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
+    rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
+    rasterizationState.cullMode = VK_CULL_MODE_NONE;
+    rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
+    rasterizationState.lineWidth = 1.0f;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState{ VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
+    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
+
+    VkPipelineColorBlendAttachmentState colorBlendStateAttachements[1]{};
+    colorBlendStateAttachements[0].colorWriteMask =
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+
+    VkPipelineColorBlendStateCreateInfo colorBlendState{ VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
+    colorBlendState.attachmentCount = GS_ARRAY_COUNT(colorBlendStateAttachements);
+    colorBlendState.pAttachments = colorBlendStateAttachements;
+
+    VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
+    VkPipelineDynamicStateCreateInfo dynamicState{ VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
+    dynamicState.dynamicStateCount = GS_ARRAY_COUNT(dynamicStates);
+    dynamicState.pDynamicStates = dynamicStates;
+
+    VkGraphicsPipelineCreateInfo createInfo{ VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
+    createInfo.stageCount = uint32_t(stages.size());
+    createInfo.pStages = stages.data();
+    createInfo.pVertexInputState = &vertexInputState;
+    createInfo.pInputAssemblyState = &inputAssemblyState;
+    createInfo.pViewportState = &viewportState;
+    createInfo.pRasterizationState = &rasterizationState;
+    createInfo.pMultisampleState = &multisampleState;
+    createInfo.pColorBlendState = &colorBlendState;
+    createInfo.pDynamicState = &dynamicState;
+    createInfo.layout = layout;
+    createInfo.renderPass = renderPass;
+
+    VkPipeline pipeline{};
+    VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &pipeline));
+    return pipeline;
+}
+
 VkSemaphore gsCreateSemaphore(VkDevice device)
 {
     VkSemaphoreCreateInfo createInfo{ VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO };
@@ -357,11 +454,114 @@ VkSemaphore gsCreateSemaphore(VkDevice device)
     return semaphore;
 }
 
+std::string gsWcharToUtf8(const wchar_t* wstring)
+{
+    int utf8_len = WideCharToMultiByte(CP_UTF8, 0, wstring, -1, NULL, 0, NULL, NULL);
+    std::string utf8;
+    utf8.resize(utf8_len);
+    WideCharToMultiByte(CP_UTF8, 0, wstring, -1, &utf8[0], utf8_len, NULL, NULL);
+    return utf8;
+}
+
+Buffer CreateVertexBuffer(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t size, uint32_t graphicsQueueFamilyIndex)
+{
+    Buffer buffer{};
+
+    VkBufferCreateInfo createInfo{ VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO };
+    createInfo.size = size;
+    createInfo.usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    createInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    createInfo.queueFamilyIndexCount = 1;
+    createInfo.pQueueFamilyIndices = &graphicsQueueFamilyIndex;
+
+    VK_CHECK_RESULT(vkCreateBuffer(device, &createInfo, nullptr, &buffer.buffer));
+
+    VkMemoryRequirements memoryRequirements;
+    vkGetBufferMemoryRequirements(device, buffer.buffer, &memoryRequirements);
+    buffer.size = memoryRequirements.size;
+
+    VkPhysicalDeviceMemoryProperties memoryProperties;
+    vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
+    VkMemoryPropertyFlags requiredProperties = (VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+
+    VkMemoryAllocateInfo allocateInfo{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
+    allocateInfo.allocationSize = memoryRequirements.size;
+    allocateInfo.memoryTypeIndex = UINT32_MAX;
+
+    for (uint32_t i = 0; i < memoryProperties.memoryTypeCount; ++i)
+    {
+        if ((memoryRequirements.memoryTypeBits & (1 << i)) &&
+            (memoryProperties.memoryTypes[i].propertyFlags & requiredProperties) == requiredProperties)
+        {
+            allocateInfo.memoryTypeIndex = i;
+            break;
+        }
+    }
+
+    GS_ASSERT(allocateInfo.memoryTypeIndex != UINT32_MAX);
+    VK_CHECK_RESULT(vkAllocateMemory(device, &allocateInfo, nullptr, &buffer.gpuMemory));
+    VK_CHECK_RESULT(vkBindBufferMemory(device, buffer.buffer, buffer.gpuMemory, 0));
+    VK_CHECK_RESULT(vkMapMemory(device, buffer.gpuMemory, 0, buffer.size, 0, &buffer.mappedMemory));
+
+    return buffer;
+}
+
+void DestroyBuffer(VkDevice device, Buffer& buffer)
+{
+    vkDestroyBuffer(device, buffer.buffer, nullptr);
+    vkUnmapMemory(device, buffer.gpuMemory);
+    vkFreeMemory(device, buffer.gpuMemory, nullptr);
+    buffer = Buffer{};
+}
+
+Mesh LoadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t graphicsQueueFamilyIndex, const std::string& path)
+{
+    Mesh mesh{};
+
+    GameSmith::ObjFile objFile{};
+    objFile.Load(path);
+    mesh.vertexCount = uint32_t(objFile.triangles.size()) * 3;
+    mesh.vertexBuffer = CreateVertexBuffer(physicalDevice, device, mesh.vertexCount * sizeof(MeshVertex), graphicsQueueFamilyIndex);
+
+    GameSmith::ObjVertex* vertices = objFile.vertices.data();
+    GameSmith::ObjNormal* normals = objFile.normals.data();
+    MeshVertex* v = (MeshVertex*)mesh.vertexBuffer.mappedMemory;
+
+    for (GameSmith::ObjTri& tri : objFile.triangles)
+    {
+        for (int i = 0; i < 3; ++i)
+        {
+            int32_t vi = tri.v[i];
+            int32_t ni = tri.n[i];
+            v[i].x = vertices[vi - 1].x;
+            v[i].y = vertices[vi - 1].y;
+            v[i].z = (vertices[vi - 1].z) * 0.5f + 0.5f;
+            v[i].nx = (ni == -1) ? 0.f : normals[ni - 1].x;
+            v[i].ny = (ni == -1) ? 0.f : normals[ni - 1].y;
+            v[i].nz = (ni == -1) ? 1.f : normals[ni - 1].z;
+        }
+
+        v += 3;
+    }
+
+    return mesh;
+}
+
+void DestroyMesh(VkDevice device, Mesh& mesh)
+{
+    DestroyBuffer(device, mesh.vertexBuffer);
+}
+
 int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     ComHelper comHelper;
 
-    GameSmith::Window* applicationWindow = GameSmith::Window::CreateApplicationWindow("GameSmith Application", 1920, 1080);
+    int argc;
+    LPWSTR* argv = CommandLineToArgvW(pCmdLine, &argc);
+    std::string objToLoad = gsWcharToUtf8(argv[1]);
+    LocalFree(argv);
+
+    GameSmith::Window* applicationWindow = GameSmith::Window::CreateApplicationWindow("GameSmith Application", 1024, 1024);
 
     if (!applicationWindow)
     {
@@ -409,68 +609,14 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     GameSmith::Vulkan::ShaderModule vertexShader = GameSmith::Vulkan::LoadShaderModule(device, "triangle.vert.spv");
     GameSmith::Vulkan::ShaderModule fragmentShader = GameSmith::Vulkan::LoadShaderModule(device, "triangle.frag.spv");
 
-    VkPipelineShaderStageCreateInfo stages[2]{};
-    stages[0].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[0].stage = vertexShader.stage;
-    stages[0].module = vertexShader.shader;
-    stages[0].pName = vertexShader.entryPoint.c_str();
-
-    stages[1].sType = VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO;
-    stages[1].stage = fragmentShader.stage;
-    stages[1].module = fragmentShader.shader;
-    stages[1].pName = fragmentShader.entryPoint.c_str();
-
-    VkPipelineVertexInputStateCreateInfo vertexInputState{ VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO };
-
-    VkPipelineInputAssemblyStateCreateInfo inputAssemblyState{ VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO };
-    inputAssemblyState.topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
-    
-    VkPipelineViewportStateCreateInfo viewportState{ VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO };
-    viewportState.viewportCount = 1;
-    viewportState.scissorCount = 1;
-
-    VkPipelineRasterizationStateCreateInfo rasterizationState{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
-    rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizationState.cullMode = VK_CULL_MODE_NONE;
-    rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
-    rasterizationState.lineWidth = 1.0f;
-
-    VkPipelineMultisampleStateCreateInfo multisampleState{ VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO };
-    multisampleState.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
-
-    VkPipelineColorBlendAttachmentState colorBlendStateAttachements[1]{};
-    colorBlendStateAttachements[0].colorWriteMask =
-            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
-
-    VkPipelineColorBlendStateCreateInfo colorBlendState{ VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO };
-    colorBlendState.attachmentCount = GS_ARRAY_COUNT(colorBlendStateAttachements);
-    colorBlendState.pAttachments = colorBlendStateAttachements;
-
-    VkDynamicState dynamicStates[] = { VK_DYNAMIC_STATE_VIEWPORT, VK_DYNAMIC_STATE_SCISSOR };
-    VkPipelineDynamicStateCreateInfo dynamicState{ VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO };
-    dynamicState.dynamicStateCount = GS_ARRAY_COUNT(dynamicStates);
-    dynamicState.pDynamicStates = dynamicStates;
-
     VkPipelineLayoutCreateInfo pipelineLayoutCrateInfo{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
     VkPipelineLayout pipelineLayout{};
     VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCrateInfo, nullptr, &pipelineLayout));
 
-    VkGraphicsPipelineCreateInfo createInfo{ VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO };
-    createInfo.stageCount = 2;
-    createInfo.pStages = stages;
-    createInfo.pVertexInputState = &vertexInputState;
-    createInfo.pInputAssemblyState = &inputAssemblyState;
-    //const VkPipelineTessellationStateCreateInfo* pTessellationState;
-    createInfo.pViewportState = &viewportState;
-    createInfo.pRasterizationState = &rasterizationState;
-    createInfo.pMultisampleState = &multisampleState;
-    //const VkPipelineDepthStencilStateCreateInfo* pDepthStencilState;
-    createInfo.pColorBlendState = &colorBlendState;
-    createInfo.pDynamicState = &dynamicState;
-    createInfo.layout = pipelineLayout;
-    createInfo.renderPass = renderPass;
-    VkPipeline pipeline{};
-    VK_CHECK_RESULT(vkCreateGraphicsPipelines(device, VK_NULL_HANDLE, 1, &createInfo, nullptr, &pipeline));
+    VkPipeline pipeline = CreateGraphicsPipeline(device, renderPass, pipelineLayout, { vertexShader, fragmentShader });
+    GS_ASSERT(pipeline);
+
+    Mesh mesh = LoadObjFile(physicalDevice, device, graphicsQueueIndex, objToLoad);
 
     while (applicationWindow->IsValid())
     {
@@ -484,10 +630,12 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
             VK_CHECK_RESULT(vkDeviceWaitIdle(device));
             DestroySwapchain(device, swapchain);
             CreateSwapchain(physicalDevice, device, surface, surfaceFormat, renderPass, commandPool, swapchain);
+            GS_ASSERT(swapchain.swapchain);
         }
 
         uint32_t imageIndex{};
-        VK_CHECK_RESULT(vkAcquireNextImageKHR(device, swapchain.swapchain, UINT64_MAX, acquireCompleteSemaphore, VK_NULL_HANDLE, &imageIndex));
+        VkResult aniresult = vkAcquireNextImageKHR(device, swapchain.swapchain, UINT64_MAX, acquireCompleteSemaphore, VK_NULL_HANDLE, &imageIndex);
+        VK_CHECK_RESULT(aniresult);
         VK_CHECK_RESULT(vkWaitForFences(device, 1, &swapchain.fences[imageIndex], VK_TRUE, UINT64_MAX));
         VK_CHECK_RESULT(vkResetFences(device, 1, &swapchain.fences[imageIndex]));
 
@@ -529,8 +677,10 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         scissor.extent = swapchain.extent;
         vkCmdSetScissor(commandBuffer, 0, 1, &scissor);
 
-        vkCmdDraw(commandBuffer, 3, 1, 0, 0);
-
+        VkDeviceSize offsets{};
+        vkCmdBindVertexBuffers(commandBuffer, 0, 1, &mesh.vertexBuffer.buffer, &offsets);
+        vkCmdDraw(commandBuffer, mesh.vertexCount, 1, 0, 0);
+        
         vkCmdEndRenderPass(commandBuffer);
 
         VkImageMemoryBarrier presentBarrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
@@ -569,6 +719,8 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     }
 
     VK_CHECK_RESULT(vkDeviceWaitIdle(device));
+
+    DestroyMesh(device, mesh);
 
     vkDestroyPipeline(device, pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);

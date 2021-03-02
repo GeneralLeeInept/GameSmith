@@ -4,6 +4,8 @@
 
 #include <algorithm>
 #include <cstdint>
+#include <filesystem>
+#include <fstream>
 #include <optional>
 #include <string>
 #include <unordered_map>

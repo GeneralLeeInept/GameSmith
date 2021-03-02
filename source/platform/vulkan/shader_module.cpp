@@ -6,9 +6,6 @@
 
 #include <spirv-headers/spirv.h>
 
-#include <filesystem>
-#include <fstream>
-
 #define VK_CHECK_RESULT(call)            \
     do                                   \
     {                                    \

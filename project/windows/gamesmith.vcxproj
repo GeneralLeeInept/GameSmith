@@ -105,6 +105,7 @@
     <ClCompile Include="..\..\source\gamesmith\core\debug.cpp" />
     <ClCompile Include="..\..\source\gamesmith\core\log.cpp" />
     <ClCompile Include="..\..\source\gamesmith\imgui\imgui.cpp" />
+    <ClCompile Include="..\..\source\gamesmith\renderer\obj_loader.cpp" />
     <ClCompile Include="..\..\source\gspch.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Development|x64'">Create</PrecompiledHeader>
       <PrecompiledHeaderFile Condition="'$(Configuration)|$(Platform)'=='Development|x64'">gspch.h</PrecompiledHeaderFile>
@@ -133,6 +134,7 @@
     <ClInclude Include="..\..\source\gamesmith\events\event.h" />
     <ClInclude Include="..\..\source\gamesmith\events\event_queue.h" />
     <ClInclude Include="..\..\source\gamesmith\input\keyboard.h" />
+    <ClInclude Include="..\..\source\gamesmith\renderer\obj_loader.h" />
     <ClInclude Include="..\..\source\gspch.h" />
     <ClInclude Include="..\..\source\gamesmith\renderer\opengl\glad\glad.h" />
     <ClInclude Include="..\..\source\gamesmith\renderer\opengl\glad\khrplatform.h" />
