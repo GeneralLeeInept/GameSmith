@@ -120,6 +120,7 @@
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">NotUsing</PrecompiledHeader>
     </ClCompile>
     <ClCompile Include="..\..\source\gamesmith\renderer\opengl\renderer_gl.cpp" />
+    <ClCompile Include="..\..\source\platform\vulkan\device.cpp" />
     <ClCompile Include="..\..\source\platform\vulkan\shader_module.cpp" />
     <ClCompile Include="..\..\source\platform\windows\window_win.cpp" />
     <ClCompile Include="..\..\source\platform\windows\winmain.cpp" />
@@ -140,6 +141,8 @@
     <ClInclude Include="..\..\source\gamesmith\renderer\opengl\glad\khrplatform.h" />
     <ClInclude Include="..\..\source\gamesmith\renderer\opengl\renderer_gl.h" />
     <ClInclude Include="..\..\source\gamesmith\renderer\opengl\wglext.h" />
+    <ClInclude Include="..\..\source\platform\vulkan\device.h" />
+    <ClInclude Include="..\..\source\platform\vulkan\gsvulkan.h" />
     <ClInclude Include="..\..\source\platform\vulkan\renderer_vk.h" />
     <ClInclude Include="..\..\source\platform\vulkan\shader_module.h" />
     <ClInclude Include="..\..\source\platform\windows\window_win.h" />

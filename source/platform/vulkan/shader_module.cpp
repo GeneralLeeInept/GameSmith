@@ -2,7 +2,8 @@
 
 #include "shader_module.h"
 
-#include <gamesmith.h>
+#include "renderer_vk.h"
+#include "gamesmith/core/debug.h"
 
 #include <spirv-headers/spirv.h>
 

@@ -1,6 +1,6 @@
 #pragma once
 
-#include "gspch.h"
+#include "gsvulkan.h"
 
 namespace GameSmith
 {

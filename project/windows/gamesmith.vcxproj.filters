@@ -64,6 +64,9 @@
     <ClCompile Include="..\..\source\gamesmith\renderer\obj_loader.cpp">
       <Filter>source\render</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\platform\vulkan\device.cpp">
+      <Filter>source\render\vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\gamesmith.h">
@@ -119,6 +122,12 @@
     </ClInclude>
     <ClInclude Include="..\..\source\gamesmith\renderer\obj_loader.h">
       <Filter>source\render</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\platform\vulkan\device.h">
+      <Filter>source\render\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\platform\vulkan\gsvulkan.h">
+      <Filter>source\render\vulkan</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
