@@ -122,6 +122,7 @@
     <ClCompile Include="..\..\source\gamesmith\renderer\opengl\renderer_gl.cpp" />
     <ClCompile Include="..\..\source\platform\vulkan\device.cpp" />
     <ClCompile Include="..\..\source\platform\vulkan\shader_module.cpp" />
+    <ClCompile Include="..\..\source\platform\vulkan\swapchain.cpp" />
     <ClCompile Include="..\..\source\platform\windows\window_win.cpp" />
     <ClCompile Include="..\..\source\platform\windows\winmain.cpp" />
   </ItemGroup>
@@ -145,6 +146,7 @@
     <ClInclude Include="..\..\source\platform\vulkan\gsvulkan.h" />
     <ClInclude Include="..\..\source\platform\vulkan\renderer_vk.h" />
     <ClInclude Include="..\..\source\platform\vulkan\shader_module.h" />
+    <ClInclude Include="..\..\source\platform\vulkan\swapchain.h" />
     <ClInclude Include="..\..\source\platform\windows\window_win.h" />
   </ItemGroup>
   <ItemGroup>

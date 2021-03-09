@@ -67,6 +67,9 @@
     <ClCompile Include="..\..\source\platform\vulkan\device.cpp">
       <Filter>source\render\vulkan</Filter>
     </ClCompile>
+    <ClCompile Include="..\..\source\platform\vulkan\swapchain.cpp">
+      <Filter>source\render\vulkan</Filter>
+    </ClCompile>
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="..\..\source\gamesmith.h">
@@ -127,6 +130,9 @@
       <Filter>source\render\vulkan</Filter>
     </ClInclude>
     <ClInclude Include="..\..\source\platform\vulkan\gsvulkan.h">
+      <Filter>source\render\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\platform\vulkan\swapchain.h">
       <Filter>source\render\vulkan</Filter>
     </ClInclude>
   </ItemGroup>

@@ -8,6 +8,7 @@
 #include "platform/vulkan/gsvulkan.h"
 #include "platform/vulkan/device.h"
 #include "platform/vulkan/shader_module.h"
+#include "platform/vulkan/swapchain.h"
 
 #include <filesystem>
 #include <fstream>
@@ -16,14 +17,6 @@ struct ComHelper
 {
     ComHelper() { CoInitializeEx(0, COINIT_APARTMENTTHREADED | COINIT_DISABLE_OLE1DDE); }
     ~ComHelper() { CoUninitialize(); }
-};
-
-struct Swapchain
-{
-    VkSwapchainKHR swapchain;
-    VkExtent2D extent;
-    std::vector<VkImage> images;
-    std::vector<VkImageView> imageViews;
 };
 
 struct Buffer
@@ -159,82 +152,7 @@ VkSurfaceFormatKHR ChooseSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfac
     return surfaceFormat;
 }
 
-VkSwapchainKHR CreateSwapchain(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkSurfaceFormatKHR surfaceFormat)
-{
-    VkSurfaceCapabilitiesKHR surfaceCaps{};
-    VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCaps));
-    GS_ASSERT(surfaceCaps.supportedCompositeAlpha & VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR);
-
-    VkSwapchainCreateInfoKHR createInfo{ VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR };
-    createInfo.surface = surface;
-    createInfo.minImageCount = std::max(2u, surfaceCaps.minImageCount);
-    createInfo.imageFormat = surfaceFormat.format;
-    createInfo.imageColorSpace = surfaceFormat.colorSpace;
-    createInfo.imageExtent = surfaceCaps.currentExtent;
-    createInfo.imageArrayLayers = 1;
-    createInfo.imageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    createInfo.imageSharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    createInfo.preTransform = surfaceCaps.currentTransform;
-    createInfo.compositeAlpha = VK_COMPOSITE_ALPHA_OPAQUE_BIT_KHR; // TODO: support other composite alpha
-    createInfo.presentMode = VK_PRESENT_MODE_FIFO_KHR;
-    createInfo.clipped = VK_FALSE; // TODO: mindfulness
-
-    VkSwapchainKHR swapchain{};
-    VK_CHECK_RESULT(vkCreateSwapchainKHR(device, &createInfo, nullptr, &swapchain));
-    return swapchain;
-}
-
-bool CreateSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat, Swapchain& swapchain)
-{
-    swapchain.swapchain = CreateSwapchain(physicalDevice, surface, device, surfaceFormat);
-
-    if (!swapchain.swapchain)
-    {
-        return false;
-    }
-
-    VkSurfaceCapabilitiesKHR surfaceCaps{};
-    VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCaps));
-    swapchain.extent = surfaceCaps.currentExtent;
-
-    uint32_t swapchainImageCount{};
-    VK_CHECK_RESULT(vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchainImageCount, nullptr));
-    swapchain.images.resize(swapchainImageCount);
-    swapchain.imageViews.resize(swapchainImageCount);
-
-    VK_CHECK_RESULT(vkGetSwapchainImagesKHR(device, swapchain.swapchain, &swapchainImageCount, swapchain.images.data()));
-
-    for (uint32_t i = 0; i < swapchainImageCount; ++i)
-    {
-        VkImageViewCreateInfo createInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-        createInfo.image = swapchain.images[i];
-        createInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-        createInfo.format = surfaceFormat.format;
-        createInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        createInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-        createInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-        VK_CHECK_RESULT(vkCreateImageView(device, &createInfo, nullptr, &swapchain.imageViews[i]));
-    }
-
-    return true;
-}
-
-void DestroySwapchain(VkDevice device, Swapchain& swapchain)
-{
-    for (VkImageView& imageView : swapchain.imageViews)
-    {
-        vkDestroyImageView(device, imageView, nullptr);
-    }
-
-    if (swapchain.swapchain)
-    {
-        vkDestroySwapchainKHR(device, swapchain.swapchain, nullptr);
-    }
-
-    swapchain = Swapchain{};
-}
-
-void CreateFrameResources(VkDevice device, Swapchain& swapchain, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers,
+void CreateFrameResources(VkDevice device, GameSmith::Vulkan::Swapchain& swapchain, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers,
     std::vector<VkFence>& fences)
 {
     uint32_t swapchainImageCount = uint32_t(swapchain.images.size());
@@ -713,8 +631,8 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     VkCommandPool commandPool = CreateCommandPool(device, graphicsQueueIndex);
     GS_ASSERT(commandPool);
 
-    Swapchain swapchain{};
-    CreateSwapchain(physicalDevice, device, surface, surfaceFormat, swapchain);
+    GameSmith::Vulkan::Swapchain swapchain{};
+    GameSmith::Vulkan::CreateSwapchain(physicalDevice, device, surface, surfaceFormat, swapchain);
     GS_ASSERT(swapchain.swapchain);
 
     GameSmith::Vulkan::ShaderModule vertexShader = GameSmith::Vulkan::LoadShaderModule(device, "triangle.vert.spv");
