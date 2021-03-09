@@ -40,6 +40,15 @@ struct Image
     VkDeviceMemory gpuMemory;
 };
 
+struct Framebuffer
+{
+    Image colorBuffer;
+    Image depthBuffer;
+    VkImageView colorBufferView;
+    VkImageView depthBufferView;
+    VkFramebuffer framebuffer;
+};
+
 struct MeshVertex
 {
     float x, y, z;
@@ -587,6 +596,73 @@ void DestroyMesh(VkDevice device, Mesh& mesh)
     DestroyBuffer(device, mesh.indexBuffer);
 }
 
+void CreateFramebuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, VkRenderPass renderPass, VkFormat colorFormat,
+    VkFormat depthFormat, Framebuffer& framebuffer)
+{
+    VkImageCreateInfo colorBufferImageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+    colorBufferImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    colorBufferImageCreateInfo.format = colorFormat;
+    colorBufferImageCreateInfo.extent = { extent.width, extent.height, 1 };
+    colorBufferImageCreateInfo.mipLevels = 1;
+    colorBufferImageCreateInfo.arrayLayers = 1;
+    colorBufferImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    colorBufferImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    colorBufferImageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    colorBufferImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    colorBufferImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    CreateImage(physicalDevice, device, colorBufferImageCreateInfo, framebuffer.colorBuffer);
+
+    VkImageViewCreateInfo colorBufferImageViewCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+    colorBufferImageViewCreateInfo.image = framebuffer.colorBuffer.image;
+    colorBufferImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    colorBufferImageViewCreateInfo.format = colorFormat;
+    colorBufferImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
+    colorBufferImageViewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+    colorBufferImageViewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+    VK_CHECK_RESULT(vkCreateImageView(device, &colorBufferImageViewCreateInfo, nullptr, &framebuffer.colorBufferView));
+
+    VkImageCreateInfo depthBufferImageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
+    depthBufferImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
+    depthBufferImageCreateInfo.format = depthFormat;
+    depthBufferImageCreateInfo.extent = { extent.width, extent.height, 1 };
+    depthBufferImageCreateInfo.mipLevels = 1;
+    depthBufferImageCreateInfo.arrayLayers = 1;
+    depthBufferImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    depthBufferImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
+    depthBufferImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    depthBufferImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
+    depthBufferImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    CreateImage(physicalDevice, device, depthBufferImageCreateInfo, framebuffer.depthBuffer);
+
+    VkImageViewCreateInfo depthBufferImageViewCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
+    depthBufferImageViewCreateInfo.image = framebuffer.depthBuffer.image;
+    depthBufferImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
+    depthBufferImageViewCreateInfo.format = VK_FORMAT_D32_SFLOAT;
+    depthBufferImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
+    depthBufferImageViewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
+    depthBufferImageViewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
+    VK_CHECK_RESULT(vkCreateImageView(device, &depthBufferImageViewCreateInfo, nullptr, &framebuffer.depthBufferView));
+
+    VkImageView framebufferImageViews[2] = { framebuffer.colorBufferView, framebuffer.depthBufferView };
+    VkFramebufferCreateInfo framebufferCreateInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
+    framebufferCreateInfo.renderPass = renderPass;
+    framebufferCreateInfo.attachmentCount = 2;
+    framebufferCreateInfo.pAttachments = framebufferImageViews;
+    framebufferCreateInfo.width = extent.width;
+    framebufferCreateInfo.height = extent.height;
+    framebufferCreateInfo.layers = 1;
+    VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &framebuffer.framebuffer));
+}
+
+void DestroyFramebuffer(VkDevice device, Framebuffer& framebuffer)
+{
+    vkDestroyFramebuffer(device, framebuffer.framebuffer, nullptr);
+    vkDestroyImageView(device, framebuffer.depthBufferView, nullptr);
+    vkDestroyImageView(device, framebuffer.colorBufferView, nullptr);
+    DestroyImage(device, framebuffer.depthBuffer);
+    DestroyImage(device, framebuffer.colorBuffer);
+}
+
 int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     ComHelper comHelper;
@@ -658,65 +734,9 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     Mesh mesh = LoadObjFile(physicalDevice, device, graphicsQueueIndex, objToLoad);
 
     // Create off-screen buffer for rendering
-    VkImageCreateInfo colorBufferImageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-    colorBufferImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    colorBufferImageCreateInfo.format = surfaceFormat.format;
-    colorBufferImageCreateInfo.extent = { swapchain.extent.width, swapchain.extent.height, 1 };
-    colorBufferImageCreateInfo.mipLevels = 1;
-    colorBufferImageCreateInfo.arrayLayers = 1;
-    colorBufferImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    colorBufferImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    colorBufferImageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    colorBufferImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    colorBufferImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    Image colorBufferImage{};
-    CreateImage(physicalDevice, device, colorBufferImageCreateInfo, colorBufferImage);
-
-    VkImageViewCreateInfo colorBufferImageViewCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-    colorBufferImageViewCreateInfo.image = colorBufferImage.image;
-    colorBufferImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    colorBufferImageViewCreateInfo.format = surfaceFormat.format;
-    colorBufferImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-    colorBufferImageViewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-    colorBufferImageViewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-    VkImageView colorBufferImageView{};
-    VK_CHECK_RESULT(vkCreateImageView(device, &colorBufferImageViewCreateInfo, nullptr, &colorBufferImageView));
-
-    VkImageCreateInfo depthBufferImageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
-    depthBufferImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
-    depthBufferImageCreateInfo.format = VK_FORMAT_D32_SFLOAT;
-    depthBufferImageCreateInfo.extent = { swapchain.extent.width, swapchain.extent.height, 1 };
-    depthBufferImageCreateInfo.mipLevels = 1;
-    depthBufferImageCreateInfo.arrayLayers = 1;
-    depthBufferImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
-    depthBufferImageCreateInfo.tiling = VK_IMAGE_TILING_OPTIMAL;
-    depthBufferImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    depthBufferImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
-    depthBufferImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    Image depthBufferImage{};
-    CreateImage(physicalDevice, device, depthBufferImageCreateInfo, depthBufferImage);
-
-    VkImageViewCreateInfo depthBufferImageViewCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
-    depthBufferImageViewCreateInfo.image = depthBufferImage.image;
-    depthBufferImageViewCreateInfo.viewType = VK_IMAGE_VIEW_TYPE_2D;
-    depthBufferImageViewCreateInfo.format = VK_FORMAT_D32_SFLOAT;
-    depthBufferImageViewCreateInfo.subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-    depthBufferImageViewCreateInfo.subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-    depthBufferImageViewCreateInfo.subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-    VkImageView depthBufferImageView{};
-    VK_CHECK_RESULT(vkCreateImageView(device, &depthBufferImageViewCreateInfo, nullptr, &depthBufferImageView));
-
-    VkImageView framebufferImageViews[2] = { colorBufferImageView, depthBufferImageView };
-    VkFramebufferCreateInfo framebufferCreateInfo{ VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO };
-    framebufferCreateInfo.renderPass = renderPass;
-    framebufferCreateInfo.attachmentCount = 2;
-    framebufferCreateInfo.pAttachments = framebufferImageViews;
-    framebufferCreateInfo.width = swapchain.extent.width;
-    framebufferCreateInfo.height = swapchain.extent.height;
-    framebufferCreateInfo.layers = 1;
-
-    VkFramebuffer framebuffer{};
-    VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &framebuffer));
+    Framebuffer framebuffer{};
+    CreateFramebuffer(physicalDevice, device, swapchain.extent, renderPass, surfaceFormat.format, VK_FORMAT_D32_SFLOAT, framebuffer);
+    GS_ASSERT(framebuffer.framebuffer);
 
     while (applicationWindow->IsValid())
     {
@@ -735,10 +755,8 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
             GS_ASSERT(swapchain.swapchain);
             CreateFrameResources(device, swapchain, commandPool, commandBuffers, fences);
 
-            vkDestroyFramebuffer(device, framebuffer, nullptr);
-            framebufferCreateInfo.width = swapchain.extent.width;
-            framebufferCreateInfo.height = swapchain.extent.height;
-            VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &framebuffer));
+            DestroyFramebuffer(device, framebuffer);
+            CreateFramebuffer(physicalDevice, device, swapchain.extent, renderPass, surfaceFormat.format, VK_FORMAT_D32_SFLOAT, framebuffer);
         }
 
         uint32_t imageIndex{};
@@ -765,7 +783,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         renderBeginBarriers[0].newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         renderBeginBarriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         renderBeginBarriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        renderBeginBarriers[0].image = colorBufferImage.image;
+        renderBeginBarriers[0].image = framebuffer.colorBuffer.image;
         renderBeginBarriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         renderBeginBarriers[0].subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         renderBeginBarriers[0].subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
@@ -776,7 +794,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         renderBeginBarriers[1].newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
         renderBeginBarriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         renderBeginBarriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        renderBeginBarriers[1].image = depthBufferImage.image;
+        renderBeginBarriers[1].image = framebuffer.depthBuffer.image;
         renderBeginBarriers[1].subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
         renderBeginBarriers[1].subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         renderBeginBarriers[1].subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
@@ -791,7 +809,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
 
         VkRenderPassBeginInfo renderPassBeginInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
         renderPassBeginInfo.renderPass = renderPass;
-        renderPassBeginInfo.framebuffer = framebuffer;
+        renderPassBeginInfo.framebuffer = framebuffer.framebuffer;
         renderPassBeginInfo.renderArea.extent = swapchain.extent;
         renderPassBeginInfo.clearValueCount = GS_ARRAY_COUNT(clearValues);
         renderPassBeginInfo.pClearValues = clearValues;
@@ -820,7 +838,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         copyBarriers[0].newLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
         copyBarriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
         copyBarriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        copyBarriers[0].image = colorBufferImage.image;
+        copyBarriers[0].image = framebuffer.colorBuffer.image;
         copyBarriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
         copyBarriers[0].subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
         copyBarriers[0].subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
@@ -850,7 +868,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         copyRegion.dstSubresource.layerCount = 1;
         copyRegion.extent = { swapchain.extent.width, swapchain.extent.height, 1 };
 
-        vkCmdCopyImage(commandBuffer, colorBufferImage.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchain.images[imageIndex],
+        vkCmdCopyImage(commandBuffer, framebuffer.colorBuffer.image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, swapchain.images[imageIndex],
                        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &copyRegion);
 
         VkImageMemoryBarrier presentBarrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
@@ -893,13 +911,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
 
     DestroyMesh(device, mesh);
 
-    vkDestroyFramebuffer(device, framebuffer, nullptr);
-
-    vkDestroyImageView(device, depthBufferImageView, nullptr);
-    DestroyImage(device, depthBufferImage);
-    vkDestroyImageView(device, colorBufferImageView, nullptr);
-    DestroyImage(device, colorBufferImage);
-
+    DestroyFramebuffer(device, framebuffer);
     DestroyFrameResources(device, commandPool, commandBuffers, fences);
     DestroySwapchain(device, swapchain);
     vkDestroyPipeline(device, pipeline, nullptr);
