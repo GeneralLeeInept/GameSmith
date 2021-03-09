@@ -101,12 +101,16 @@ VkDevice CreateDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueInd
 
     static const char* extensions[] = { VK_KHR_SWAPCHAIN_EXTENSION_NAME };
 
-    VkPhysicalDeviceFeatures enabledFeatures{};
+    VkPhysicalDeviceFeatures2 enabledFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2 };
+
+    VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures separateDepthStencilLayoutsFeatures{ VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES };
+    enabledFeatures.pNext = &separateDepthStencilLayoutsFeatures;
+    separateDepthStencilLayoutsFeatures.separateDepthStencilLayouts = VK_TRUE;
 
     VkDeviceCreateInfo createInfo{ VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO };
+    createInfo.pNext = &enabledFeatures;
     createInfo.queueCreateInfoCount = 1;
     createInfo.pQueueCreateInfos = &queueCreateInfo;
-    createInfo.pEnabledFeatures = &enabledFeatures;
     createInfo.ppEnabledExtensionNames = extensions;
     createInfo.enabledExtensionCount = GS_ARRAY_COUNT(extensions);
 
