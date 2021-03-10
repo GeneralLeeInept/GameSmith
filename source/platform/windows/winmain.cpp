@@ -152,7 +152,7 @@ VkSurfaceFormatKHR ChooseSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfac
     return surfaceFormat;
 }
 
-void CreateFrameResources(VkDevice device, GameSmith::Vulkan::Swapchain& swapchain, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers,
+void CreateFrameResources(VkDevice device, gs::vk::Swapchain& swapchain, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers,
     std::vector<VkFence>& fences)
 {
     uint32_t swapchainImageCount = uint32_t(swapchain.images.size());
@@ -241,7 +241,7 @@ VkCommandPool CreateCommandPool(VkDevice device, uint32_t queueFamilyIndex)
     return commandPool;
 }
 
-using ShaderList = std::initializer_list<GameSmith::Vulkan::ShaderModule>;
+using ShaderList = std::initializer_list<gs::vk::ShaderModule>;
 
 VkPipeline CreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkPipelineLayout layout, ShaderList shaders)
 {
@@ -452,16 +452,16 @@ struct MeshVertexComparer
 
 Mesh LoadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t graphicsQueueFamilyIndex, const std::string& path)
 {
-    GameSmith::ObjFile objFile{};
+    gs::ObjFile objFile{};
     objFile.Load(path);
-    GameSmith::ObjVertex* vertices = objFile.vertices.data();
-    GameSmith::ObjNormal* normals = objFile.normals.data();
+    gs::ObjVertex* vertices = objFile.vertices.data();
+    gs::ObjNormal* normals = objFile.normals.data();
 
     std::unordered_map<MeshVertex, size_t, MeshVertexHasher, MeshVertexComparer> vbdatalookup;
     std::vector<MeshVertex> vbdata{};
     std::vector<uint32_t> ibdata{};
 
-    for (GameSmith::ObjTri& tri : objFile.triangles)
+    for (gs::ObjTri& tri : objFile.triangles)
     {
         for (int i = 0; i < 3; ++i)
         {
@@ -590,7 +590,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     std::string objToLoad = gsWcharToUtf8(argv[1]);
     LocalFree(argv);
 
-    GameSmith::Window* applicationWindow = GameSmith::Window::CreateApplicationWindow("GameSmith Application", 1024, 1024);
+    gs::Window* applicationWindow = gs::Window::CreateApplicationWindow("GameSmith Application", 1024, 1024);
 
     if (!applicationWindow)
     {
@@ -606,10 +606,10 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
 
     VkPhysicalDevice physicalDevice{};
     uint32_t graphicsQueueIndex{};
-    GameSmith::Vulkan::ChoosePhysicalDevice(instance, surface, physicalDevice, graphicsQueueIndex);
+    gs::vk::ChoosePhysicalDevice(instance, surface, physicalDevice, graphicsQueueIndex);
     GS_ASSERT(physicalDevice);
 
-    VkDevice device = GameSmith::Vulkan::CreateDevice(physicalDevice, graphicsQueueIndex);
+    VkDevice device = gs::vk::CreateDevice(physicalDevice, graphicsQueueIndex);
     GS_ASSERT(device);
 
     VkQueue graphicsQueue{};
@@ -631,12 +631,12 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     VkCommandPool commandPool = CreateCommandPool(device, graphicsQueueIndex);
     GS_ASSERT(commandPool);
 
-    GameSmith::Vulkan::Swapchain swapchain{};
-    GameSmith::Vulkan::CreateSwapchain(physicalDevice, device, surface, surfaceFormat, swapchain);
+    gs::vk::Swapchain swapchain{};
+    gs::vk::CreateSwapchain(physicalDevice, device, surface, surfaceFormat, swapchain);
     GS_ASSERT(swapchain.swapchain);
 
-    GameSmith::Vulkan::ShaderModule vertexShader = GameSmith::Vulkan::LoadShaderModule(device, "triangle.vert.spv");
-    GameSmith::Vulkan::ShaderModule fragmentShader = GameSmith::Vulkan::LoadShaderModule(device, "triangle.frag.spv");
+    gs::vk::ShaderModule vertexShader = gs::vk::LoadShaderModule(device, "triangle.vert.spv");
+    gs::vk::ShaderModule fragmentShader = gs::vk::LoadShaderModule(device, "triangle.frag.spv");
 
     VkPipelineLayoutCreateInfo pipelineLayoutCrateInfo{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
     VkPipelineLayout pipelineLayout{};

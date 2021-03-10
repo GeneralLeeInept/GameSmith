@@ -2,7 +2,7 @@
 
 #include "gamesmith/core/window.h"
 
-namespace GameSmith
+namespace gs
 {
 
 class PlatformWindow : public Window

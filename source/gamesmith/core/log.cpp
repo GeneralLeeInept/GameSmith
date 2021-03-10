@@ -7,7 +7,7 @@
 #include <cstdarg>
 #include <string>
 
-namespace GameSmith
+namespace gs
 {
 
 void Log::Print(const char* format, ...)

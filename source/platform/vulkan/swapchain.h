@@ -2,10 +2,10 @@
 
 #include "gsvulkan.h"
 
-namespace GameSmith
+namespace gs
 {
 
-namespace Vulkan
+namespace vk
 {
 
 struct Swapchain

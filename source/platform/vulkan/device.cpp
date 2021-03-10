@@ -7,9 +7,9 @@
 #include "gamesmith/core/log.h"
 #include "renderer_vk.h"
 
-namespace GameSmith
+namespace gs
 {
-namespace Vulkan
+namespace vk
 {
 
 void ChoosePhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice, uint32_t& graphicsQueueIndex)

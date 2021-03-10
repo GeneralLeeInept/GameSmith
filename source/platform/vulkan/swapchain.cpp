@@ -6,9 +6,9 @@
 #include "gamesmith/core/debug.h"
 #include "gamesmith/core/log.h"
 
-namespace GameSmith
+namespace gs
 {
-namespace Vulkan
+namespace vk
 {
 VkSwapchainKHR CreateSwapchain(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkSurfaceFormatKHR surfaceFormat)
 {

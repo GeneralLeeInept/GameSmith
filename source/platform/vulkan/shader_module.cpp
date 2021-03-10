@@ -14,9 +14,9 @@
         GS_ASSERT(result == VK_SUCCESS); \
     } while (0)
 
-namespace GameSmith
+namespace gs
 {
-namespace Vulkan
+namespace vk
 {
 
 VkShaderStageFlagBits ShaderStage(SpvExecutionModel executionModel)

@@ -2,7 +2,7 @@
 
 #include "gsvulkan.h"
 
-namespace GameSmith
+namespace gs
 {
 
 class Window;

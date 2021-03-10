@@ -8,7 +8,7 @@
 static LRESULT CALLBACK gsWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam);
 static std::wstring gsUtf8ToWchar(const std::string& utf8);
 
-namespace GameSmith
+namespace gs
 {
 
 ATOM PlatformWindow::wnd_class_{};
@@ -110,7 +110,7 @@ std::wstring gsUtf8ToWchar(const std::string& utf8)
 
 LRESULT CALLBACK gsWindowProc(HWND hwnd, UINT msg, WPARAM wparam, LPARAM lparam)
 {
-    GameSmith::PlatformWindow* window = (GameSmith::PlatformWindow*)GetPropW(hwnd, L"GameSmithWindow");
+    gs::PlatformWindow* window = (gs::PlatformWindow*)GetPropW(hwnd, L"GameSmithWindow");
 
     switch (msg)
     {

@@ -4,7 +4,7 @@
 
 #include <gamesmith.h>
 
-namespace GameSmith
+namespace gs
 {
 
 inline float ReadFloat(const char*& c, float d)

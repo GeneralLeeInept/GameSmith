@@ -2,7 +2,7 @@
 
 #include "gamesmith/core/config.h"
 
-namespace GameSmith
+namespace gs
 {
 
 class Log
@@ -15,7 +15,7 @@ public:
 
 #if GS_ENABLE_LOGGING
 #define GS_LOG_PRINT(level, format, ...) \
-    GameSmith::Log::Print("%s(%d): %s: [" level "]: " format "\n", __FILE__, __LINE__, (const char*)(__FUNCTION__), __VA_ARGS__)
+    gs::Log::Print("%s(%d): %s: [" level "]: " format "\n", __FILE__, __LINE__, (const char*)(__FUNCTION__), __VA_ARGS__)
 
 #define GS_TRACE(format, ...) GS_LOG_PRINT("TRACE", format, __VA_ARGS__)
 #define GS_INFO(format, ...) GS_LOG_PRINT("INFO", format, __VA_ARGS__)

@@ -1,6 +1,6 @@
 #pragma once
 
-namespace GameSmith
+namespace gs
 {
 
 enum class KeyCode

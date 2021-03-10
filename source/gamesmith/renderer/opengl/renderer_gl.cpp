@@ -378,7 +378,7 @@ static void APIENTRY DebugMessageCallback(GLenum source, GLenum type, GLuint id,
              severity_string, message);
 }
 
-namespace GameSmith
+namespace gs
 {
 
 bool RendererGL::Init(const Window* window)

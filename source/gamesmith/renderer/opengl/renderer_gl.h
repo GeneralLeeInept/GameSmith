@@ -2,7 +2,7 @@
 
 #include "gspch.h"
 
-namespace GameSmith
+namespace gs
 {
 
 class Window;

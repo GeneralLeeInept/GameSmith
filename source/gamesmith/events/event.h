@@ -2,7 +2,7 @@
 
 #include "gamesmith/input/keyboard.h"
 
-namespace GameSmith
+namespace gs
 {
 
 enum class EventType
