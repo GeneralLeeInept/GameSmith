@@ -195,14 +195,14 @@ VkRenderPass CreateRenderPass(VkDevice device, VkFormat colorFormat, VkFormat de
     attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
     attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
-    attachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    attachments[0].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
     attachments[1].format = depthFormat;
     attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
     attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_CLEAR;
     attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-    attachments[1].initialLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
     attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     VkAttachmentReference colorAttachments[1]{};
@@ -688,39 +688,6 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
-        // Should not need these? The render pass should handle transitioning the image to the required initial layout: 
-        // Vulkan 1.2.162 Spec - 7.1.1. Image Layout Transitions - "Layout transitions that are performed via image memory barriers execute in their
-        // entirety in submission order, relative to other image layout transitions submitted to the same queue, including those performed by render
-        // passes."
-        // But this shouldn't hurt either? These barriers would save the driver needing to transition the images to the required layout at the beginning
-        // of the render pass?
-        VkImageMemoryBarrier renderBeginBarriers[2]{};
-        renderBeginBarriers[0].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        renderBeginBarriers[0].dstAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
-        renderBeginBarriers[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        renderBeginBarriers[0].newLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        renderBeginBarriers[0].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        renderBeginBarriers[0].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        renderBeginBarriers[0].image = framebuffer.colorBuffer.image;
-        renderBeginBarriers[0].subresourceRange.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
-        renderBeginBarriers[0].subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-        renderBeginBarriers[0].subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-        renderBeginBarriers[1].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
-        renderBeginBarriers[1].dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        renderBeginBarriers[1].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        renderBeginBarriers[1].newLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        renderBeginBarriers[1].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        renderBeginBarriers[1].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
-        renderBeginBarriers[1].image = framebuffer.depthBuffer.image;
-        renderBeginBarriers[1].subresourceRange.aspectMask = VK_IMAGE_ASPECT_DEPTH_BIT;
-        renderBeginBarriers[1].subresourceRange.levelCount = VK_REMAINING_MIP_LEVELS;
-        renderBeginBarriers[1].subresourceRange.layerCount = VK_REMAINING_ARRAY_LAYERS;
-
-        vkCmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, VK_DEPENDENCY_BY_REGION_BIT,
-                             0, nullptr, 0, nullptr, GS_ARRAY_COUNT(renderBeginBarriers), renderBeginBarriers);
-
         VkClearValue clearValues[2]{};
         clearValues[0].color = { 43.0f / 255.0f, 53.0f / 255.0f, 51.0f / 255.0f, 1.0f };
         clearValues[1].depthStencil = { 0.0f, 0 };
@@ -792,7 +759,6 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
 
         VkImageMemoryBarrier presentBarrier{ VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER };
         presentBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
-        presentBarrier.dstAccessMask = VK_ACCESS_MEMORY_READ_BIT;
         presentBarrier.oldLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
         presentBarrier.newLayout = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
         presentBarrier.srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
