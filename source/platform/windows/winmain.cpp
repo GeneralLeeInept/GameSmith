@@ -4,6 +4,8 @@
 #include "gamesmith/core/debug.h"
 #include "gamesmith/core/log.h"
 #include "gamesmith/core/window.h"
+#include "gamesmith/math/math.h"
+#include "gamesmith/math/mat44.h"
 #include "gamesmith/renderer/obj_loader.h"
 #include "platform/vulkan/gsvulkan.h"
 #include "platform/vulkan/device.h"
@@ -153,7 +155,7 @@ VkSurfaceFormatKHR ChooseSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfac
 }
 
 void CreateFrameResources(VkDevice device, gs::vk::Swapchain& swapchain, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers,
-    std::vector<VkFence>& fences)
+                          std::vector<VkFence>& fences)
 {
     uint32_t swapchainImageCount = uint32_t(swapchain.images.size());
 
@@ -382,8 +384,8 @@ Buffer CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t s
 
     VkMemoryAllocateInfo allocateInfo{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
     allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = GetMemoryTypeIndex(physicalDevice, memoryRequirements,
-        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+    allocateInfo.memoryTypeIndex =
+            GetMemoryTypeIndex(physicalDevice, memoryRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     GS_ASSERT(allocateInfo.memoryTypeIndex != UINT32_MAX);
     VK_CHECK_RESULT(vkAllocateMemory(device, &allocateInfo, nullptr, &buffer.gpuMemory));
     VK_CHECK_RESULT(vkBindBufferMemory(device, buffer.buffer, buffer.gpuMemory, 0));
@@ -515,7 +517,7 @@ void DestroyMesh(VkDevice device, Mesh& mesh)
 }
 
 void CreateFramebuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, VkRenderPass renderPass, VkFormat colorFormat,
-    VkFormat depthFormat, Framebuffer& framebuffer)
+                       VkFormat depthFormat, Framebuffer& framebuffer)
 {
     VkImageCreateInfo colorBufferImageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
     colorBufferImageCreateInfo.imageType = VK_IMAGE_TYPE_2D;
@@ -581,6 +583,8 @@ void DestroyFramebuffer(VkDevice device, Framebuffer& framebuffer)
     DestroyImage(device, framebuffer.colorBuffer);
 }
 
+static void MathTest();
+
 int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     ComHelper comHelper;
@@ -589,6 +593,8 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     LPWSTR* argv = CommandLineToArgvW(pCmdLine, &argc);
     std::string objToLoad = gsWcharToUtf8(argv[1]);
     LocalFree(argv);
+
+    MathTest();
 
     gs::Window* applicationWindow = gs::Window::CreateApplicationWindow("GameSmith Application", 1024, 1024);
 
@@ -845,4 +851,25 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     return result;
+}
+
+void MathTest()
+{
+    gs::Mat44 m({ 1.f, 1.f, 4.f, 5.f }, { 3.f, 3.f, 3.f, 2.f }, { 5.f, 1.f, 9.f, 0.f }, { 9.f, 7.f, 7.f, 9.f });
+    float detM = m.Determinant();
+    gs::Log::Print("detM = %g\n", detM);
+    detM = gs::Mat44().Determinant();
+    gs::Log::Print("detM = %g\n", detM);
+
+    gs::Mat44 mi = gs::Inverse(m);
+    gs::Log::Print("mi =\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n", mi.X.x, mi.Y.x, mi.Z.x, mi.P.x, mi.X.y, mi.Y.y,
+                   mi.Z.y, mi.P.y, mi.X.z, mi.Y.z, mi.Z.z, mi.P.z, mi.X.w, mi.Y.w, mi.Z.w, mi.P.w);
+
+    gs::Mat44 id = m * mi;
+    gs::Log::Print("id =\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n", id.X.x, id.Y.x, id.Z.x, id.P.x, id.X.y, id.Y.y,
+                   id.Z.y, id.P.y, id.X.z, id.Y.z, id.Z.z, id.P.z, id.X.w, id.Y.w, id.Z.w, id.P.w);
+
+    mi = gs::Inverse(id);
+    gs::Log::Print("mi =\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n", mi.X.x, mi.Y.x, mi.Z.x, mi.P.x, mi.X.y, mi.Y.y,
+                   mi.Z.y, mi.P.y, mi.X.z, mi.Y.z, mi.Z.z, mi.P.z, mi.X.w, mi.Y.w, mi.Z.w, mi.P.w);
 }

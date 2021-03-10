@@ -32,6 +32,9 @@
     <Filter Include="source\render\vulkan">
       <UniqueIdentifier>{0b35dcb2-34fe-4541-851e-3e16a438db01}</UniqueIdentifier>
     </Filter>
+    <Filter Include="source\math">
+      <UniqueIdentifier>{15e1e28a-d81c-4552-a7f3-bf22ce2d1951}</UniqueIdentifier>
+    </Filter>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="..\..\source\gspch.cpp">
@@ -69,6 +72,15 @@
     </ClCompile>
     <ClCompile Include="..\..\source\platform\vulkan\swapchain.cpp">
       <Filter>source\render\vulkan</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\gamesmith\math\vec4.cpp">
+      <Filter>source\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\gamesmith\math\vec3.cpp">
+      <Filter>source\math</Filter>
+    </ClCompile>
+    <ClCompile Include="..\..\source\gamesmith\math\mat44.cpp">
+      <Filter>source\math</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
@@ -134,6 +146,18 @@
     </ClInclude>
     <ClInclude Include="..\..\source\platform\vulkan\swapchain.h">
       <Filter>source\render\vulkan</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\math\math.h">
+      <Filter>source\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\math\vec4.h">
+      <Filter>source\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\math\vec3.h">
+      <Filter>source\math</Filter>
+    </ClInclude>
+    <ClInclude Include="..\..\source\gamesmith\math\mat44.h">
+      <Filter>source\math</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
