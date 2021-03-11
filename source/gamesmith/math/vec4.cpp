@@ -14,7 +14,7 @@ Vec4::Vec4(float f)
 {
 }
 
-Vec4::Vec4(float x_, float y_, float z_, float w_)
+constexpr Vec4::Vec4(float x_, float y_, float z_, float w_)
     : x(x_)
     , y(y_)
     , z(z_)

@@ -6,6 +6,7 @@
 #include "gamesmith/core/window.h"
 #include "gamesmith/math/math.h"
 #include "gamesmith/math/mat44.h"
+#include "gamesmith/math/vec3.h"
 #include "gamesmith/renderer/obj_loader.h"
 #include "platform/vulkan/gsvulkan.h"
 #include "platform/vulkan/device.h"
@@ -14,6 +15,8 @@
 
 #include <filesystem>
 #include <fstream>
+
+#define ORTHO 1
 
 struct ComHelper
 {
@@ -56,6 +59,12 @@ struct Mesh
     Buffer vertexBuffer;
     uint32_t indexCount;
     Buffer indexBuffer;
+};
+
+struct alignas(16) ShaderGlobals
+{
+    gs::Mat44 proj;
+    gs::Mat44 view;
 };
 
 VkDebugUtilsMessengerEXT debugMessenger{};
@@ -277,7 +286,7 @@ VkPipeline CreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkPi
 
     VkPipelineRasterizationStateCreateInfo rasterizationState{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
     rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizationState.cullMode = VK_CULL_MODE_BACK_BIT;
+    rasterizationState.cullMode = VK_CULL_MODE_NONE;//VK_CULL_MODE_BACK_BIT;
     rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizationState.lineWidth = 1.0f;
 
@@ -472,7 +481,7 @@ Mesh LoadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t grap
             int32_t ni = tri.n[i];
             v.x = vertices[vi - 1].x;
             v.y = vertices[vi - 1].y;
-            v.z = (vertices[vi - 1].z) * 0.5f + 0.5f;
+            v.z = vertices[vi - 1].z;
             v.nx = (ni == -1) ? 0.f : normals[ni - 1].x;
             v.ny = (ni == -1) ? 0.f : normals[ni - 1].y;
             v.nz = (ni == -1) ? 1.f : normals[ni - 1].z;
@@ -583,8 +592,6 @@ void DestroyFramebuffer(VkDevice device, Framebuffer& framebuffer)
     DestroyImage(device, framebuffer.colorBuffer);
 }
 
-static void MathTest();
-
 int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     ComHelper comHelper;
@@ -593,8 +600,6 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     LPWSTR* argv = CommandLineToArgvW(pCmdLine, &argc);
     std::string objToLoad = gsWcharToUtf8(argv[1]);
     LocalFree(argv);
-
-    MathTest();
 
     gs::Window* applicationWindow = gs::Window::CreateApplicationWindow("GameSmith Application", 1024, 1024);
 
@@ -644,7 +649,20 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     gs::vk::ShaderModule vertexShader = gs::vk::LoadShaderModule(device, "triangle.vert.spv");
     gs::vk::ShaderModule fragmentShader = gs::vk::LoadShaderModule(device, "triangle.frag.spv");
 
+    VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[] = { { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_ALL,
+                                                                     nullptr } };
+
+    VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO };
+    descriptorSetLayoutCreateInfo.bindingCount = GS_ARRAY_COUNT(descriptorSetLayoutBindings);
+    descriptorSetLayoutCreateInfo.pBindings = descriptorSetLayoutBindings;
+
+    VkDescriptorSetLayout descriptorSetLayout{};
+    VK_CHECK_RESULT(vkCreateDescriptorSetLayout(device, &descriptorSetLayoutCreateInfo, nullptr, &descriptorSetLayout));
+
     VkPipelineLayoutCreateInfo pipelineLayoutCrateInfo{ VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO };
+    pipelineLayoutCrateInfo.setLayoutCount = 1;
+    pipelineLayoutCrateInfo.pSetLayouts = &descriptorSetLayout;
+
     VkPipelineLayout pipelineLayout{};
     VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCrateInfo, nullptr, &pipelineLayout));
 
@@ -661,6 +679,45 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     Framebuffer framebuffer{};
     CreateFramebuffer(physicalDevice, device, swapchain.extent, renderPass, surfaceFormat.format, VK_FORMAT_D32_SFLOAT, framebuffer);
     GS_ASSERT(framebuffer.framebuffer);
+
+    // Create descriptor pool
+    VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 32 } };
+
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+    descriptorPoolCreateInfo.maxSets = 32;
+    descriptorPoolCreateInfo.poolSizeCount = GS_ARRAY_COUNT(poolSizes);
+    descriptorPoolCreateInfo.pPoolSizes = poolSizes;
+
+    VkDescriptorPool descriptorPool{};
+    VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &descriptorPool));
+
+    // Create globals UBO
+    // TODO: dynamic UBO, needs to be at least swapchain image count * sizeof(ShaderGlobals), assume
+    // swapchain image count is always <= 4 for now because dealing with resizing is gross at the moment
+    Buffer globalsBuffer =
+            CreateBuffer(physicalDevice, device, sizeof(ShaderGlobals) * 4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, { graphicsQueueIndex });
+    GS_ASSERT(globalsBuffer.buffer);
+
+    VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
+    descriptorSetAllocateInfo.descriptorPool = descriptorPool;
+    descriptorSetAllocateInfo.descriptorSetCount = 1;
+    descriptorSetAllocateInfo.pSetLayouts = &descriptorSetLayout;
+
+    VkDescriptorSet descriptorSet{};
+    VK_CHECK_RESULT(vkAllocateDescriptorSets(device, &descriptorSetAllocateInfo, &descriptorSet));
+
+    VkDescriptorBufferInfo descriptorBufferInfo{};
+    descriptorBufferInfo.buffer = globalsBuffer.buffer;
+    descriptorBufferInfo.offset = 0;
+    descriptorBufferInfo.range = sizeof(ShaderGlobals);
+
+    VkWriteDescriptorSet writeDescriptorSet{ VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET };
+    writeDescriptorSet.dstSet = descriptorSet;
+    writeDescriptorSet.dstBinding = 0;
+    writeDescriptorSet.descriptorCount = 1;
+    writeDescriptorSet.descriptorType = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC;
+    writeDescriptorSet.pBufferInfo = &descriptorBufferInfo;
+    vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 
     while (applicationWindow->IsValid())
     {
@@ -694,6 +751,21 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         commandBufferBeginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
         VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &commandBufferBeginInfo));
 
+        uint32_t dynamicOffset = imageIndex * sizeof(ShaderGlobals);
+        float viewWidth = float(swapchain.extent.width);
+        float viewHeight = float(swapchain.extent.height);
+        float viewAspect = viewWidth / viewHeight;
+
+#if ORTHO
+        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].proj = gs::Orthographic(-viewAspect, -1.f, viewAspect, 1.f, -1.f, 1.f);
+        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].view = gs::Mat44();
+#else
+        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].proj = gs::Perspective(gs::DegToRad(60.f), viewAspect, 0.1f, 100.f);
+        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].view = gs::LookAt( {1.f, 0.5f, 1.f}, {0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
+#endif
+
+        vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 1, &dynamicOffset);
+
         VkClearValue clearValues[2]{};
         clearValues[0].color = { 43.0f / 255.0f, 53.0f / 255.0f, 51.0f / 255.0f, 1.0f };
         clearValues[1].depthStencil = { 0.0f, 0 };
@@ -708,7 +780,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
         vkCmdBindPipeline(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline);
 
-        VkViewport viewport{ 0.f, (float)swapchain.extent.height, (float)swapchain.extent.width, -(float)swapchain.extent.height, 0.f, 1.f };
+        VkViewport viewport{ 0.f, (float)swapchain.extent.height, (float)swapchain.extent.width, -(float)swapchain.extent.height, 1.f, 0.f };
         vkCmdSetViewport(commandBuffer, 0, 1, &viewport);
 
         VkRect2D scissor{};
@@ -803,11 +875,15 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
 
     DestroyMesh(device, mesh);
 
+    DestroyBuffer(device, globalsBuffer);
+    vkDestroyDescriptorPool(device, descriptorPool, nullptr);
+
     DestroyFramebuffer(device, framebuffer);
     DestroyFrameResources(device, commandPool, commandBuffers, fences);
     DestroySwapchain(device, swapchain);
     vkDestroyPipeline(device, pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
+    vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);
     vkDestroyShaderModule(device, fragmentShader.shader, nullptr);
     vkDestroyShaderModule(device, vertexShader.shader, nullptr);
     vkDestroyCommandPool(device, commandPool, nullptr);
@@ -851,25 +927,4 @@ int WINAPI wWinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine
     }
 
     return result;
-}
-
-void MathTest()
-{
-    gs::Mat44 m({ 1.f, 1.f, 4.f, 5.f }, { 3.f, 3.f, 3.f, 2.f }, { 5.f, 1.f, 9.f, 0.f }, { 9.f, 7.f, 7.f, 9.f });
-    float detM = m.Determinant();
-    gs::Log::Print("detM = %g\n", detM);
-    detM = gs::Mat44().Determinant();
-    gs::Log::Print("detM = %g\n", detM);
-
-    gs::Mat44 mi = gs::Inverse(m);
-    gs::Log::Print("mi =\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n", mi.X.x, mi.Y.x, mi.Z.x, mi.P.x, mi.X.y, mi.Y.y,
-                   mi.Z.y, mi.P.y, mi.X.z, mi.Y.z, mi.Z.z, mi.P.z, mi.X.w, mi.Y.w, mi.Z.w, mi.P.w);
-
-    gs::Mat44 id = m * mi;
-    gs::Log::Print("id =\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n", id.X.x, id.Y.x, id.Z.x, id.P.x, id.X.y, id.Y.y,
-                   id.Z.y, id.P.y, id.X.z, id.Y.z, id.Z.z, id.P.z, id.X.w, id.Y.w, id.Z.w, id.P.w);
-
-    mi = gs::Inverse(id);
-    gs::Log::Print("mi =\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n    %g %g %g %g\n", mi.X.x, mi.Y.x, mi.Z.x, mi.P.x, mi.X.y, mi.Y.y,
-                   mi.Z.y, mi.P.y, mi.X.z, mi.Y.z, mi.Z.z, mi.P.z, mi.X.w, mi.Y.w, mi.Z.w, mi.P.w);
 }

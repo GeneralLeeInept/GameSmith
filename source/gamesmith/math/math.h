@@ -9,12 +9,12 @@ namespace m
 static constexpr float pi = 3.14159265358979323846f;
 }
 
-constexpr float DegToRad(float r)
+constexpr float RadToDeg(float r)
 {
     return r * 180.0f / m::pi;
 }
 
-constexpr float RadToDeg(float d)
+constexpr float DegToRad(float d)
 {
     return d * m::pi / 180.0f;
 }

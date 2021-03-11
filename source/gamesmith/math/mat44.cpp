@@ -4,12 +4,13 @@
 
 #include <gamesmith/core/debug.h>
 #include <gamesmith/math/math.h>
+#include <gamesmith/math/vec3.h>
 
 namespace gs
 {
 
 Mat44::Mat44()
-    : Mat44(1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f, 0.0f, 0.0f, 0.0f, 0.0f, 1.0f)
+    : Mat44(1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f)
 {
 }
 
@@ -84,7 +85,7 @@ Mat44& Mat44::operator*=(float s)
 
 Mat44& Mat44::operator/=(float s)
 {
-    float invS = 1.0f / s;
+    float invS = 1.f / s;
     X *= invS;
     Y *= invS;
     Z *= invS;
@@ -144,7 +145,7 @@ Mat44 operator*(float s, const Mat44& m)
 
 Mat44 operator/(const Mat44& m, float s)
 {
-    float invS = 1.0f / s;
+    float invS = 1.f / s;
     return Mat44{ m.X * invS, m.Y * invS, m.Z * invS, m.P * invS };
 }
 
@@ -192,15 +193,92 @@ Mat44 Inverse(const Mat44& m)
                    { -minorXw, +minorYw, -minorZw, +minorPw });
 
     float determinant = m.X.x * minorXx - m.X.y * minorXy + m.X.z * minorXz - m.X.w * minorXw;
-    GS_ASSERT(determinant != 0.0f);
+    GS_ASSERT(determinant != 0.f);
 
-    return (1.0f / determinant) * adjugate;
+    return (1.f / determinant) * adjugate;
 }
 
 Mat44 InverseFast(const Mat44& m)
 {
     GS_ASSERT(!"Not implemented");
     return Inverse(m);
+}
+
+Mat44 RotateX(float r)
+{
+    float c = std::cos(r);
+    float s = std::sin(r);
+    return Mat44({ 1.f, 0.f, 0.f, 0.f }, { 0.f, c, s, 0.f }, { 0.f, -s, c, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+}
+
+Mat44 RotateY(float r)
+{
+    float c = std::cos(r);
+    float s = std::sin(r);
+    return Mat44({ c, 0.f, -s, 0.f }, { 0.f, 1.f, 0.f, 0.f }, { s, 0.f, c, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+}
+
+Mat44 RotateZ(float r)
+{
+    float c = std::cos(r);
+    float s = std::sin(r);
+    return Mat44({ c, s, 0.f, 0.f }, { -s, c, 0.f, 0.f }, { 0.f, 0.f, 1.f, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+}
+
+Mat44 Rotate(float pitch, float yaw, float roll)
+{
+    // Rotate around Y, then X, then Z
+    float c1 = std::cos(roll);
+    float s1 = std::sin(roll);
+    float c2 = std::cos(pitch);
+    float s2 = std::sin(pitch);
+    float c3 = std::cos(yaw);
+    float s3 = std::sin(yaw);
+    float Xx = c1 * c3 - s1 * s2 * s3;
+    float Xy = c3 * s1 + c1 * s2 * s3;
+    float Xz = -c2 * s3;
+    float Yx = -c2 * s1;
+    float Yy = c1 * c2;
+    float Yz = s2;
+    float Zx = c1 * s3 + c3 * s1 * s2;
+    float Zy = s1 * s3 - c1 * c3 * s2;
+    float Zz = c2 * c3;
+    return Mat44({ Xx, Xy, Xz, 0.f }, { Yx, Yy, Yz, 0.f }, { Zx, Zy, Zz, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+}
+
+Mat44 Translate(const Vec4& p)
+{
+    return Mat44({ 1.f, 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f, 0.f }, { 0.f, 0.f, 1.f, 0.f }, p);
+}
+
+Mat44 Scale(float s)
+{
+    return Mat44({ s, 0.f, 0.f, 0.f }, { 0.f, s, 0.f, 0.f }, { 0.f, 0.f, s, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+}
+
+Mat44 Perspective(float fovy, float aspect, float znear, float zfar)
+{
+    float f = 1.f / std::tan(fovy / 2.f);
+    return Mat44({ f / aspect, 0.f, 0.f, 0.f }, { 0.f, f, 0.f, 0.f }, { 0.f, 0.f, -(zfar + znear) / (zfar - znear), -1.f },
+                 { 0.f, 0.f, -(2.f * zfar * znear) / (zfar - znear), 0.f });
+}
+
+Mat44 Orthographic(float left, float top, float right, float bottom, float znear, float zfar)
+{
+    float tx = -(right + left) / (right - left);
+    float ty = -(top + bottom) / (top - bottom);
+    float tz = -znear / (zfar - znear);
+    return Mat44({ 2.f / (right - left), 0.f, 0.f, 0.f }, { 0.f, 2.f / (bottom - top), 0.f, 0.f }, { 0.f, 0.f, -1.f / (zfar - znear), 0.f },
+                 { tx, ty, tz, 1.f });
+}
+
+Mat44 LookAt(const Vec3& from, const Vec3& at, const Vec3& up)
+{
+    Vec3 forward = Normalize(at - from);
+    Vec3 right = Normalize(Cross(forward, up));
+    Vec3 vup = Cross(right, forward);
+    return Mat44({ right.x, vup.x, -forward.x, 0.f }, { right.y, vup.y, -forward.y, 0.f }, { right.z, vup.z, -forward.z, 0.f },
+                 { -Dot(right, from), -Dot(vup, from), Dot(forward, from), 1.f });
 }
 
 } // namespace gs
