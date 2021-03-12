@@ -9,12 +9,12 @@
 namespace gs
 {
 
-Mat44::Mat44()
-    : Mat44(1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f)
+mat44::mat44()
+    : mat44(1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f, 0.f, 0.f, 0.f, 0.f, 1.f)
 {
 }
 
-Mat44::Mat44(const Vec4& X_, const Vec4& Y_, const Vec4& Z_, const Vec4& P_)
+mat44::mat44(const Vec4& X_, const Vec4& Y_, const Vec4& Z_, const Vec4& P_)
     : X(X_)
     , Y(Y_)
     , Z(Z_)
@@ -22,7 +22,7 @@ Mat44::Mat44(const Vec4& X_, const Vec4& Y_, const Vec4& Z_, const Vec4& P_)
 {
 }
 
-Mat44::Mat44(float Xx, float Xy, float Xz, float Xw, float Yx, float Yy, float Yz, float Yw, float Zx, float Zy, float Zz, float Zw, float Px,
+mat44::mat44(float Xx, float Xy, float Xz, float Xw, float Yx, float Yy, float Yz, float Yw, float Zx, float Zy, float Zz, float Zw, float Px,
              float Py, float Pz, float Pw)
     : X(Xx, Xy, Xz, Xw)
     , Y(Yx, Yy, Yz, Yw)
@@ -31,7 +31,7 @@ Mat44::Mat44(float Xx, float Xy, float Xz, float Xw, float Yx, float Yy, float Y
 {
 }
 
-Vec4& Mat44::operator[](int ord)
+Vec4& mat44::operator[](int ord)
 {
     GS_ASSERT(ord >= 0 && ord < 4);
     if (ord == 0) return X;
@@ -40,7 +40,7 @@ Vec4& Mat44::operator[](int ord)
     return P;
 }
 
-Vec4 Mat44::operator[](int ord) const
+Vec4 mat44::operator[](int ord) const
 {
     GS_ASSERT(ord >= 0 && ord < 4);
     if (ord == 0) return X;
@@ -49,7 +49,7 @@ Vec4 Mat44::operator[](int ord) const
     return P;
 }
 
-Mat44& Mat44::operator*=(const Mat44& m)
+mat44& mat44::operator*=(const mat44& m)
 {
     float Xx = X.x * m.X.x + Y.x * m.X.y + Z.x * m.X.z + P.x * m.X.w;
     float Yx = X.x * m.Y.x + Y.x * m.Y.y + Z.x * m.Y.z + P.x * m.Y.w;
@@ -74,7 +74,7 @@ Mat44& Mat44::operator*=(const Mat44& m)
     return *this;
 }
 
-Mat44& Mat44::operator*=(float s)
+mat44& mat44::operator*=(float s)
 {
     X *= s;
     Y *= s;
@@ -83,7 +83,7 @@ Mat44& Mat44::operator*=(float s)
     return *this;
 }
 
-Mat44& Mat44::operator/=(float s)
+mat44& mat44::operator/=(float s)
 {
     float invS = 1.f / s;
     X *= invS;
@@ -94,7 +94,7 @@ Mat44& Mat44::operator/=(float s)
 }
 
 
-float Mat44::Determinant() const
+float mat44::Determinant() const
 {
     float minorXx = (Y.y * Z.z * P.w + Z.y * P.z * Y.w + P.y * Y.z * Z.w) - (P.y * Z.z * Y.w + Z.y * Y.z * P.w + Y.y * P.z * Z.w);
     float minorXy = (Y.x * Z.z * P.w + Z.x * P.z * Y.w + P.x * Y.z * Z.w) - (P.x * Z.z * Y.w + Z.x * Y.z * P.w + Y.x * P.z * Z.w);
@@ -103,7 +103,7 @@ float Mat44::Determinant() const
     return X.x * minorXx - X.y * minorXy + X.z * minorXz - X.w * minorXw;
 }
 
-Mat44 operator*(const Mat44& a, const Mat44& b)
+mat44 operator*(const mat44& a, const mat44& b)
 {
     float Xx = a.X.x * b.X.x + a.Y.x * b.X.y + a.Z.x * b.X.z + a.P.x * b.X.w;
     float Yx = a.X.x * b.Y.x + a.Y.x * b.Y.y + a.Z.x * b.Y.z + a.P.x * b.Y.w;
@@ -121,10 +121,10 @@ Mat44 operator*(const Mat44& a, const Mat44& b)
     float Yw = a.X.w * b.Y.x + a.Y.w * b.Y.y + a.Z.w * b.Y.z + a.P.w * b.Y.w;
     float Zw = a.X.w * b.Z.x + a.Y.w * b.Z.y + a.Z.w * b.Z.z + a.P.w * b.Z.w;
     float Pw = a.X.w * b.P.x + a.Y.w * b.P.y + a.Z.w * b.P.z + a.P.w * b.P.w;
-    return Mat44({ Xx, Xy, Xz, Xw }, { Yx, Yy, Yz, Yw }, { Zx, Zy, Zz, Zw }, { Px, Py, Pz, Pw });
+    return mat44({ Xx, Xy, Xz, Xw }, { Yx, Yy, Yz, Yw }, { Zx, Zy, Zz, Zw }, { Px, Py, Pz, Pw });
 }
 
-Vec4 operator*(const Mat44& m, const Vec4& v)
+Vec4 operator*(const mat44& m, const Vec4& v)
 {
     float x = m.X.x * v.x + m.Y.x * v.y + m.Z.x * v.z + m.P.x * v.w;
     float y = m.X.y * v.x + m.Y.y * v.y + m.Z.y * v.z + m.P.y * v.w;
@@ -133,28 +133,28 @@ Vec4 operator*(const Mat44& m, const Vec4& v)
     return Vec4(x, y, z, w);
 }
 
-Mat44 operator*(const Mat44& m, float s)
+mat44 operator*(const mat44& m, float s)
 {
-    return Mat44{ m.X * s, m.Y * s, m.Z * s, m.P * s };
+    return mat44{ m.X * s, m.Y * s, m.Z * s, m.P * s };
 }
 
-Mat44 operator*(float s, const Mat44& m)
+mat44 operator*(float s, const mat44& m)
 {
-    return Mat44{ m.X * s, m.Y * s, m.Z * s, m.P * s };
+    return mat44{ m.X * s, m.Y * s, m.Z * s, m.P * s };
 }
 
-Mat44 operator/(const Mat44& m, float s)
+mat44 operator/(const mat44& m, float s)
 {
     float invS = 1.f / s;
-    return Mat44{ m.X * invS, m.Y * invS, m.Z * invS, m.P * invS };
+    return mat44{ m.X * invS, m.Y * invS, m.Z * invS, m.P * invS };
 }
 
-Mat44 Transpose(const Mat44& m)
+mat44 transpose(const mat44& m)
 {
-    return Mat44({ m.X.x, m.Y.x, m.Z.x, m.P.x }, { m.X.y, m.Y.y, m.Z.y, m.P.y }, { m.X.z, m.Y.z, m.Z.z, m.P.z }, { m.X.w, m.Y.w, m.Z.w, m.P.w });
+    return mat44({ m.X.x, m.Y.x, m.Z.x, m.P.x }, { m.X.y, m.Y.y, m.Z.y, m.P.y }, { m.X.z, m.Y.z, m.Z.z, m.P.z }, { m.X.w, m.Y.w, m.Z.w, m.P.w });
 }
 
-Mat44 Inverse(const Mat44& m)
+mat44 inverse(const mat44& m)
 {
     float minorXx = (m.Y.y * m.Z.z * m.P.w + m.Z.y * m.P.z * m.Y.w + m.P.y * m.Y.z * m.Z.w) -
                     (m.P.y * m.Z.z * m.Y.w + m.Z.y * m.Y.z * m.P.w + m.Y.y * m.P.z * m.Z.w);
@@ -189,7 +189,7 @@ Mat44 Inverse(const Mat44& m)
     float minorPw = (m.X.x * m.Y.y * m.Z.z + m.Y.x * m.Z.y * m.X.z + m.Z.x * m.X.y * m.Y.z) -
                     (m.Z.x * m.Y.y * m.X.z + m.Y.x * m.X.y * m.Z.z + m.X.x * m.Z.y * m.Y.z);
 
-    Mat44 adjugate({ +minorXx, -minorYx, +minorZx, -minorPx }, { -minorXy, +minorYy, -minorZy, +minorPy }, { +minorXz, -minorYz, +minorZz, -minorPz },
+    mat44 adjugate({ +minorXx, -minorYx, +minorZx, -minorPx }, { -minorXy, +minorYy, -minorZy, +minorPy }, { +minorXz, -minorYz, +minorZz, -minorPz },
                    { -minorXw, +minorYw, -minorZw, +minorPw });
 
     float determinant = m.X.x * minorXx - m.X.y * minorXy + m.X.z * minorXz - m.X.w * minorXw;
@@ -198,34 +198,34 @@ Mat44 Inverse(const Mat44& m)
     return (1.f / determinant) * adjugate;
 }
 
-Mat44 InverseFast(const Mat44& m)
+mat44 invertOrthogonal(const mat44& m)
 {
     GS_ASSERT(!"Not implemented");
-    return Inverse(m);
+    return inverse(m);
 }
 
-Mat44 RotateX(float r)
+mat44 rotateX(float r)
 {
     float c = std::cos(r);
     float s = std::sin(r);
-    return Mat44({ 1.f, 0.f, 0.f, 0.f }, { 0.f, c, s, 0.f }, { 0.f, -s, c, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+    return mat44({ 1.f, 0.f, 0.f, 0.f }, { 0.f, c, s, 0.f }, { 0.f, -s, c, 0.f }, { 0.f, 0.f, 0.f, 1.f });
 }
 
-Mat44 RotateY(float r)
+mat44 rotateY(float r)
 {
     float c = std::cos(r);
     float s = std::sin(r);
-    return Mat44({ c, 0.f, -s, 0.f }, { 0.f, 1.f, 0.f, 0.f }, { s, 0.f, c, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+    return mat44({ c, 0.f, -s, 0.f }, { 0.f, 1.f, 0.f, 0.f }, { s, 0.f, c, 0.f }, { 0.f, 0.f, 0.f, 1.f });
 }
 
-Mat44 RotateZ(float r)
+mat44 rotateZ(float r)
 {
     float c = std::cos(r);
     float s = std::sin(r);
-    return Mat44({ c, s, 0.f, 0.f }, { -s, c, 0.f, 0.f }, { 0.f, 0.f, 1.f, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+    return mat44({ c, s, 0.f, 0.f }, { -s, c, 0.f, 0.f }, { 0.f, 0.f, 1.f, 0.f }, { 0.f, 0.f, 0.f, 1.f });
 }
 
-Mat44 Rotate(float pitch, float yaw, float roll)
+mat44 rotate(float pitch, float yaw, float roll)
 {
     // Rotate around Y, then X, then Z
     float c1 = std::cos(roll);
@@ -243,42 +243,42 @@ Mat44 Rotate(float pitch, float yaw, float roll)
     float Zx = c1 * s3 + c3 * s1 * s2;
     float Zy = s1 * s3 - c1 * c3 * s2;
     float Zz = c2 * c3;
-    return Mat44({ Xx, Xy, Xz, 0.f }, { Yx, Yy, Yz, 0.f }, { Zx, Zy, Zz, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+    return mat44({ Xx, Xy, Xz, 0.f }, { Yx, Yy, Yz, 0.f }, { Zx, Zy, Zz, 0.f }, { 0.f, 0.f, 0.f, 1.f });
 }
 
-Mat44 Translate(const Vec4& p)
+mat44 translate(const Vec4& p)
 {
-    return Mat44({ 1.f, 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f, 0.f }, { 0.f, 0.f, 1.f, 0.f }, p);
+    return mat44({ 1.f, 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f, 0.f }, { 0.f, 0.f, 1.f, 0.f }, p);
 }
 
-Mat44 Scale(float s)
+mat44 scale(float s)
 {
-    return Mat44({ s, 0.f, 0.f, 0.f }, { 0.f, s, 0.f, 0.f }, { 0.f, 0.f, s, 0.f }, { 0.f, 0.f, 0.f, 1.f });
+    return mat44({ s, 0.f, 0.f, 0.f }, { 0.f, s, 0.f, 0.f }, { 0.f, 0.f, s, 0.f }, { 0.f, 0.f, 0.f, 1.f });
 }
 
-Mat44 Perspective(float fovy, float aspect, float znear, float zfar)
+mat44 perspective(float fovy, float aspect, float znear, float zfar)
 {
     float f = 1.f / std::tan(fovy / 2.f);
-    return Mat44({ f / aspect, 0.f, 0.f, 0.f }, { 0.f, f, 0.f, 0.f }, { 0.f, 0.f, -(zfar + znear) / (zfar - znear), -1.f },
+    return mat44({ f / aspect, 0.f, 0.f, 0.f }, { 0.f, f, 0.f, 0.f }, { 0.f, 0.f, -(zfar + znear) / (zfar - znear), -1.f },
                  { 0.f, 0.f, -(2.f * zfar * znear) / (zfar - znear), 0.f });
 }
 
-Mat44 Orthographic(float left, float top, float right, float bottom, float znear, float zfar)
+mat44 orthographic(float left, float top, float right, float bottom, float znear, float zfar)
 {
     float tx = -(right + left) / (right - left);
     float ty = -(top + bottom) / (top - bottom);
     float tz = -znear / (zfar - znear);
-    return Mat44({ 2.f / (right - left), 0.f, 0.f, 0.f }, { 0.f, 2.f / (bottom - top), 0.f, 0.f }, { 0.f, 0.f, -1.f / (zfar - znear), 0.f },
+    return mat44({ 2.f / (right - left), 0.f, 0.f, 0.f }, { 0.f, 2.f / (bottom - top), 0.f, 0.f }, { 0.f, 0.f, -1.f / (zfar - znear), 0.f },
                  { tx, ty, tz, 1.f });
 }
 
-Mat44 LookAt(const Vec3& from, const Vec3& at, const Vec3& up)
+mat44 lookAt(const vec3& from, const vec3& at, const vec3& up)
 {
-    Vec3 forward = Normalize(at - from);
-    Vec3 right = Normalize(Cross(forward, up));
-    Vec3 vup = Cross(right, forward);
-    return Mat44({ right.x, vup.x, -forward.x, 0.f }, { right.y, vup.y, -forward.y, 0.f }, { right.z, vup.z, -forward.z, 0.f },
-                 { -Dot(right, from), -Dot(vup, from), Dot(forward, from), 1.f });
+    vec3 forward = normalize(at - from);
+    vec3 right = normalize(cross(forward, up));
+    vec3 vup = cross(right, forward);
+    return mat44({ right.x, vup.x, -forward.x, 0.f }, { right.y, vup.y, -forward.y, 0.f }, { right.z, vup.z, -forward.z, 0.f },
+                 { -dot(right, from), -dot(vup, from), dot(forward, from), 1.f });
 }
 
 } // namespace gs

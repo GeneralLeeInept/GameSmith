@@ -10,10 +10,10 @@ class Window;
 class RendererGL
 {
 public:
-    bool Init(const Window* window);
+    bool init(const Window* window);
 
-    void BeginFrame();
-    void EndFrame();
+    void beginFrame();
+    void endFrame();
 
 private:
     HWND hwnd_{};

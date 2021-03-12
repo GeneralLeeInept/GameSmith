@@ -16,8 +16,8 @@ struct Swapchain
     std::vector<VkImageView> imageViews;
 };
 
-bool CreateSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat, Swapchain& swapchain);
-void DestroySwapchain(VkDevice device, Swapchain& swapchain);
+bool createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat, Swapchain& swapchain);
+void destroySwapchain(VkDevice device, Swapchain& swapchain);
 
 } // namespace Vulkan
 } // namespace GameSmith

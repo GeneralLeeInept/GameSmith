@@ -14,7 +14,7 @@ struct ShaderModule
     std::string entryPoint;
 };
 
-ShaderModule LoadShaderModule(VkDevice device, const std::string& path);
+ShaderModule loadShaderModule(VkDevice device, const std::string& path);
 
 } // namespace Vulkan
 } // namespace GameSmith

@@ -6,51 +6,51 @@ namespace gs
 {
 
 // Column-major 4x4 matrix
-struct alignas(16) Mat44
+struct alignas(16) mat44
 {
     Vec4 X;
     Vec4 Y;
     Vec4 Z;
     Vec4 P;
 
-    Mat44();
-    Mat44(const Vec4&, const Vec4&, const Vec4&, const Vec4&);
-    Mat44(float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float);
-    Mat44(Mat44&) = default;
-    Mat44(Mat44&&) = default;
+    mat44();
+    mat44(const Vec4&, const Vec4&, const Vec4&, const Vec4&);
+    mat44(float, float, float, float, float, float, float, float, float, float, float, float, float, float, float, float);
+    mat44(mat44&) = default;
+    mat44(mat44&&) = default;
 
-    Mat44& operator=(const Mat44&) = default;
-    Mat44& operator=(Mat44&&) = default;
+    mat44& operator=(const mat44&) = default;
+    mat44& operator=(mat44&&) = default;
 
     Vec4& operator[](int);
     Vec4 operator[](int) const;
 
-    Mat44& operator*=(const Mat44&);
-    Mat44& operator*=(float);
-    Mat44& operator/=(float);
+    mat44& operator*=(const mat44&);
+    mat44& operator*=(float);
+    mat44& operator/=(float);
 
     float Determinant() const;
 };
 
-Mat44 operator*(const Mat44& a, const Mat44& b);
-Vec4 operator*(const Mat44& m, const Vec4& v);
-Mat44 operator*(const Mat44& m, float s);
-Mat44 operator*(float s, const Mat44& m);
-Mat44 operator/(const Mat44& m, float s);
+mat44 operator*(const mat44& a, const mat44& b);
+Vec4 operator*(const mat44& m, const Vec4& v);
+mat44 operator*(const mat44& m, float s);
+mat44 operator*(float s, const mat44& m);
+mat44 operator/(const mat44& m, float s);
 
-Mat44 Transpose(const Mat44& m);
-Mat44 Inverse(const Mat44& m);
-Mat44 InverseFast(const Mat44& m);
+mat44 transpose(const mat44& m);
+mat44 inverse(const mat44& m);
+mat44 invertOrthogonal(const mat44& m);
 
-Mat44 RotateX(float r);
-Mat44 RotateY(float r);
-Mat44 RotateZ(float r);
-Mat44 Rotate(float pitch, float yaw, float roll);
-Mat44 Translate(const Vec4& p);
-Mat44 Scale(float s);
+mat44 rotateX(float r);
+mat44 rotateY(float r);
+mat44 rotateZ(float r);
+mat44 rotate(float pitch, float yaw, float roll);
+mat44 translate(const Vec4& p);
+mat44 scale(float s);
 
-Mat44 Perspective(float fovy, float aspect, float znear, float zfar);
-Mat44 Orthographic(float left, float top, float right, float bottom, float znear, float zfar);
-Mat44 LookAt(const Vec3& from, const Vec3& at, const Vec3& up);
+mat44 perspective(float fovy, float aspect, float znear, float zfar);
+mat44 orthographic(float left, float top, float right, float bottom, float znear, float zfar);
+mat44 lookAt(const vec3& from, const vec3& at, const vec3& up);
 
 } // namespace gs

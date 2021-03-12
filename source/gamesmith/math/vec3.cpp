@@ -8,19 +8,19 @@
 namespace gs
 {
 
-Vec3::Vec3(float f)
-    : Vec3(f, f, f)
+vec3::vec3(float f)
+    : vec3(f, f, f)
 {
 }
 
-Vec3::Vec3(float x_, float y_, float z_)
+vec3::vec3(float x_, float y_, float z_)
     : x(x_)
     , y(y_)
     , z(z_)
 {
 }
 
-float& Vec3::operator[](int ord)
+float& vec3::operator[](int ord)
 {
     GS_ASSERT(ord >= 0 && ord < 3);
     if (ord == 0) return x;
@@ -28,7 +28,7 @@ float& Vec3::operator[](int ord)
     return z;
 }
 
-float Vec3::operator[](int ord) const
+float vec3::operator[](int ord) const
 {
     GS_ASSERT(ord >= 0 && ord < 3);
     if (ord == 0) return x;
@@ -36,7 +36,7 @@ float Vec3::operator[](int ord) const
     return z;
 }
 
-Vec3& Vec3::operator*=(const Vec3& rhs)
+vec3& vec3::operator*=(const vec3& rhs)
 {
     x *= rhs.x;
     y *= rhs.y;
@@ -44,7 +44,7 @@ Vec3& Vec3::operator*=(const Vec3& rhs)
     return *this;
 }
 
-Vec3& Vec3::operator/=(const Vec3& rhs)
+vec3& vec3::operator/=(const vec3& rhs)
 {
     x /= rhs.x;
     y /= rhs.y;
@@ -52,7 +52,7 @@ Vec3& Vec3::operator/=(const Vec3& rhs)
     return *this;
 }
 
-Vec3& Vec3::operator+=(const Vec3& rhs)
+vec3& vec3::operator+=(const vec3& rhs)
 {
     x += rhs.x;
     y += rhs.y;
@@ -60,7 +60,7 @@ Vec3& Vec3::operator+=(const Vec3& rhs)
     return *this;
 }
 
-Vec3& Vec3::operator-=(const Vec3& rhs)
+vec3& vec3::operator-=(const vec3& rhs)
 {
     x -= rhs.x;
     y -= rhs.y;
@@ -68,7 +68,7 @@ Vec3& Vec3::operator-=(const Vec3& rhs)
     return *this;
 }
 
-Vec3& Vec3::operator*=(float s)
+vec3& vec3::operator*=(float s)
 {
     x *= s;
     y *= s;
@@ -76,7 +76,7 @@ Vec3& Vec3::operator*=(float s)
     return *this;
 }
 
-Vec3& Vec3::operator/=(float s)
+vec3& vec3::operator/=(float s)
 {
     float invS = 1.0f / s;
     x *= invS;
@@ -85,75 +85,75 @@ Vec3& Vec3::operator/=(float s)
     return *this;
 }
 
-float Vec3::Length() const
+float vec3::length() const
 {
     return std::sqrt(x * x + y * y + z * z);
 }
 
-float Vec3::LengthSq() const
+float vec3::lengthSq() const
 {
     return x * x + y * y + z * z;
 }
 
-Vec3 operator-(const Vec3& u)
+vec3 operator-(const vec3& u)
 {
-    return Vec3{ -u.x, -u.y, -u.z };
+    return vec3{ -u.x, -u.y, -u.z };
 }
 
-bool operator==(const Vec3& lhs, const Vec3& rhs)
+bool operator==(const vec3& lhs, const vec3& rhs)
 {
     return (lhs.x == rhs.x && lhs.y == rhs.y && lhs.z == rhs.z);
 }
 
-Vec3 operator*(const Vec3& u, const Vec3& v)
+vec3 operator*(const vec3& u, const vec3& v)
 {
-    return Vec3{ u.x * v.x, u.y * v.y, u.z * v.z };
+    return vec3{ u.x * v.x, u.y * v.y, u.z * v.z };
 }
 
-Vec3 operator/(const Vec3& u, const Vec3& v)
+vec3 operator/(const vec3& u, const vec3& v)
 {
-    return Vec3{ u.x / v.x, u.y / v.y, u.z / v.z };
+    return vec3{ u.x / v.x, u.y / v.y, u.z / v.z };
 }
 
-Vec3 operator+(const Vec3& u, const Vec3& v)
+vec3 operator+(const vec3& u, const vec3& v)
 {
-    return Vec3{ u.x + v.x, u.y + v.y, u.z + v.z };
+    return vec3{ u.x + v.x, u.y + v.y, u.z + v.z };
 }
 
-Vec3 operator-(const Vec3& u, const Vec3& v)
+vec3 operator-(const vec3& u, const vec3& v)
 {
-    return Vec3{ u.x - v.x, u.y - v.y, u.z - v.z };
+    return vec3{ u.x - v.x, u.y - v.y, u.z - v.z };
 }
 
-Vec3 operator*(const Vec3& u, float s)
+vec3 operator*(const vec3& u, float s)
 {
-    return Vec3{ u.x * s, u.y * s, u.z * s };
+    return vec3{ u.x * s, u.y * s, u.z * s };
 }
 
-Vec3 operator/(const Vec3& u, float s)
+vec3 operator/(const vec3& u, float s)
 {
     float invS = 1.0f / s;
-    return Vec3{ u.x * invS, u.y * invS, u.z * invS };
+    return vec3{ u.x * invS, u.y * invS, u.z * invS };
 }
 
-Vec3 operator*(float s, const Vec3& u)
+vec3 operator*(float s, const vec3& u)
 {
-    return Vec3{ u.x * s, u.y * s, u.z * s };
+    return vec3{ u.x * s, u.y * s, u.z * s };
 }
 
-Vec3 Normalize(const Vec3& u)
+vec3 normalize(const vec3& u)
 {
     float m = std::sqrt(u.x * u.x + u.y * u.y + u.z * u.z);
     float s = 1.0f / m;
-    return Vec3{ u.x * s, u.y * s, u.z * s };
+    return vec3{ u.x * s, u.y * s, u.z * s };
 }
 
-Vec3 Cross(const Vec3& u, const Vec3& v)
+vec3 cross(const vec3& u, const vec3& v)
 {
-    return Vec3{ u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z, u.x * v.y - u.y * v.x };
+    return vec3{ u.y * v.z - u.z * v.y, u.z * v.x - u.x * v.z, u.x * v.y - u.y * v.x };
 }
 
-float Dot(const Vec3& u, const Vec3& v)
+float dot(const vec3& u, const vec3& v)
 {
     return u.x * v.x + u.y * v.y + u.z * v.z;
 }

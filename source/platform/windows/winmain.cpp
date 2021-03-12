@@ -16,7 +16,7 @@
 #include <filesystem>
 #include <fstream>
 
-#define ORTHO 1
+#define ORTHO 0
 
 struct ComHelper
 {
@@ -63,13 +63,13 @@ struct Mesh
 
 struct alignas(16) ShaderGlobals
 {
-    gs::Mat44 proj;
-    gs::Mat44 view;
+    gs::mat44 proj;
+    gs::mat44 view;
 };
 
 VkDebugUtilsMessengerEXT debugMessenger{};
 
-VkBool32 VKAPI_CALL DebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
+VkBool32 VKAPI_CALL debugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes,
                                                 const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, void* pUserData)
 {
     GS_WARN("%s", pCallbackData->pMessage);
@@ -77,7 +77,7 @@ VkBool32 VKAPI_CALL DebugUtilsMessengerCallback(VkDebugUtilsMessageSeverityFlagB
     return VK_FALSE;
 }
 
-VkInstance CreateInstance()
+VkInstance createInstance()
 {
     VkApplicationInfo applicationInfo{ VK_STRUCTURE_TYPE_APPLICATION_INFO };
     applicationInfo.pApplicationName = "GameSmith Application";
@@ -106,7 +106,7 @@ VkInstance CreateInstance()
     VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo{ VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT };
     debugCreateInfo.messageSeverity = (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
     debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-    debugCreateInfo.pfnUserCallback = DebugUtilsMessengerCallback;
+    debugCreateInfo.pfnUserCallback = debugUtilsMessengerCallback;
     createInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 
     static const char* enabledLayers[] = { "VK_LAYER_KHRONOS_validation" };
@@ -124,14 +124,14 @@ VkInstance CreateInstance()
 
     debugCreateInfo.messageSeverity = (VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT);
     debugCreateInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
-    debugCreateInfo.pfnUserCallback = DebugUtilsMessengerCallback;
+    debugCreateInfo.pfnUserCallback = debugUtilsMessengerCallback;
     VK_CHECK_RESULT(CreateDebugUtilsMessengerEXT(instance, &debugCreateInfo, nullptr, &debugMessenger));
 #endif
 
     return instance;
 }
 
-VkSurfaceKHR CreateSurface(VkInstance instance, HINSTANCE hInstance, HWND hWnd)
+VkSurfaceKHR createSurface(VkInstance instance, HINSTANCE hInstance, HWND hWnd)
 {
     VkWin32SurfaceCreateInfoKHR createInfo{ VK_STRUCTURE_TYPE_WIN32_SURFACE_CREATE_INFO_KHR };
     createInfo.hinstance = hInstance;
@@ -142,7 +142,7 @@ VkSurfaceKHR CreateSurface(VkInstance instance, HINSTANCE hInstance, HWND hWnd)
     return surface;
 }
 
-VkSurfaceFormatKHR ChooseSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
+VkSurfaceFormatKHR chooseSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface)
 {
     uint32_t surfaceFormatCount{};
     VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceFormatsKHR(physicalDevice, surface, &surfaceFormatCount, nullptr));
@@ -163,7 +163,7 @@ VkSurfaceFormatKHR ChooseSurfaceFormat(VkPhysicalDevice physicalDevice, VkSurfac
     return surfaceFormat;
 }
 
-void CreateFrameResources(VkDevice device, gs::vk::Swapchain& swapchain, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers,
+void createFrameResources(VkDevice device, gs::vk::Swapchain& swapchain, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers,
                           std::vector<VkFence>& fences)
 {
     uint32_t swapchainImageCount = uint32_t(swapchain.images.size());
@@ -186,7 +186,7 @@ void CreateFrameResources(VkDevice device, gs::vk::Swapchain& swapchain, VkComma
     }
 }
 
-void DestroyFrameResources(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFence>& fences)
+void destroyFrameResources(VkDevice device, VkCommandPool commandPool, std::vector<VkCommandBuffer>& commandBuffers, std::vector<VkFence>& fences)
 {
     for (VkFence& fence : fences)
     {
@@ -199,7 +199,7 @@ void DestroyFrameResources(VkDevice device, VkCommandPool commandPool, std::vect
     commandBuffers.clear();
 }
 
-VkRenderPass CreateRenderPass(VkDevice device, VkFormat colorFormat, VkFormat depthFormat)
+VkRenderPass createRenderPass(VkDevice device, VkFormat colorFormat, VkFormat depthFormat)
 {
     VkAttachmentDescription attachments[2]{};
     attachments[0].format = colorFormat;
@@ -241,7 +241,7 @@ VkRenderPass CreateRenderPass(VkDevice device, VkFormat colorFormat, VkFormat de
     return renderPass;
 }
 
-VkCommandPool CreateCommandPool(VkDevice device, uint32_t queueFamilyIndex)
+VkCommandPool createCommandPool(VkDevice device, uint32_t queueFamilyIndex)
 {
     VkCommandPoolCreateInfo createInfo{ VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO };
     createInfo.flags = VK_COMMAND_POOL_CREATE_TRANSIENT_BIT | VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
@@ -254,7 +254,7 @@ VkCommandPool CreateCommandPool(VkDevice device, uint32_t queueFamilyIndex)
 
 using ShaderList = std::initializer_list<gs::vk::ShaderModule>;
 
-VkPipeline CreateGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkPipelineLayout layout, ShaderList shaders)
+VkPipeline createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkPipelineLayout layout, ShaderList shaders)
 {
     std::vector<VkPipelineShaderStageCreateInfo> stages{};
 
@@ -347,7 +347,7 @@ std::string gsWcharToUtf8(const wchar_t* wstring)
     return utf8;
 }
 
-uint32_t GetMemoryTypeIndex(VkPhysicalDevice physicalDevice, VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags requiredProperties)
+uint32_t getMemoryTypeIndex(VkPhysicalDevice physicalDevice, VkMemoryRequirements& memoryRequirements, VkMemoryPropertyFlags requiredProperties)
 {
     VkPhysicalDeviceMemoryProperties memoryProperties;
     vkGetPhysicalDeviceMemoryProperties(physicalDevice, &memoryProperties);
@@ -367,7 +367,7 @@ uint32_t GetMemoryTypeIndex(VkPhysicalDevice physicalDevice, VkMemoryRequirement
 
 using QueueFamilyIndices = std::initializer_list<uint32_t>;
 
-Buffer CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t size, VkBufferUsageFlags usage, QueueFamilyIndices queues)
+Buffer createBuffer(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t size, VkBufferUsageFlags usage, QueueFamilyIndices queues)
 {
     Buffer buffer{};
 
@@ -394,7 +394,7 @@ Buffer CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t s
     VkMemoryAllocateInfo allocateInfo{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
     allocateInfo.allocationSize = memoryRequirements.size;
     allocateInfo.memoryTypeIndex =
-            GetMemoryTypeIndex(physicalDevice, memoryRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
+            getMemoryTypeIndex(physicalDevice, memoryRequirements, VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT);
     GS_ASSERT(allocateInfo.memoryTypeIndex != UINT32_MAX);
     VK_CHECK_RESULT(vkAllocateMemory(device, &allocateInfo, nullptr, &buffer.gpuMemory));
     VK_CHECK_RESULT(vkBindBufferMemory(device, buffer.buffer, buffer.gpuMemory, 0));
@@ -403,7 +403,7 @@ Buffer CreateBuffer(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t s
     return buffer;
 }
 
-void DestroyBuffer(VkDevice device, Buffer& buffer)
+void destroyBuffer(VkDevice device, Buffer& buffer)
 {
     vkDestroyBuffer(device, buffer.buffer, nullptr);
     vkUnmapMemory(device, buffer.gpuMemory);
@@ -411,7 +411,7 @@ void DestroyBuffer(VkDevice device, Buffer& buffer)
     buffer = Buffer{};
 }
 
-void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImageCreateInfo& createInfo, Image& image)
+void createImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImageCreateInfo& createInfo, Image& image)
 {
     VK_CHECK_RESULT(vkCreateImage(device, &createInfo, nullptr, &image.image));
 
@@ -420,14 +420,14 @@ void CreateImage(VkPhysicalDevice physicalDevice, VkDevice device, VkImageCreate
 
     VkMemoryAllocateInfo allocateInfo{ VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO };
     allocateInfo.allocationSize = memoryRequirements.size;
-    allocateInfo.memoryTypeIndex = GetMemoryTypeIndex(physicalDevice, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
+    allocateInfo.memoryTypeIndex = getMemoryTypeIndex(physicalDevice, memoryRequirements, VK_MEMORY_PROPERTY_DEVICE_LOCAL_BIT);
     GS_ASSERT(allocateInfo.memoryTypeIndex != UINT32_MAX);
 
     VK_CHECK_RESULT(vkAllocateMemory(device, &allocateInfo, nullptr, &image.gpuMemory));
     VK_CHECK_RESULT(vkBindImageMemory(device, image.image, image.gpuMemory, 0));
 }
 
-void DestroyImage(VkDevice device, Image& image)
+void destroyImage(VkDevice device, Image& image)
 {
     vkDestroyImage(device, image.image, nullptr);
     vkFreeMemory(device, image.gpuMemory, nullptr);
@@ -461,10 +461,10 @@ struct MeshVertexComparer
     bool operator()(const MeshVertex& lhs, const MeshVertex& rhs) const { return memcmp(&lhs, &rhs, sizeof(MeshVertex)) == 0; }
 };
 
-Mesh LoadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t graphicsQueueFamilyIndex, const std::string& path)
+Mesh loadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t graphicsQueueFamilyIndex, const std::string& path)
 {
     gs::ObjFile objFile{};
-    objFile.Load(path);
+    objFile.load(path);
     gs::ObjVertex* vertices = objFile.vertices.data();
     gs::ObjNormal* normals = objFile.normals.data();
 
@@ -507,25 +507,25 @@ Mesh LoadObjFile(VkPhysicalDevice physicalDevice, VkDevice device, uint32_t grap
     Mesh mesh{};
 
     mesh.vertexCount = uint32_t(vbdata.size());
-    mesh.vertexBuffer = CreateBuffer(physicalDevice, device, mesh.vertexCount * sizeof(MeshVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+    mesh.vertexBuffer = createBuffer(physicalDevice, device, mesh.vertexCount * sizeof(MeshVertex), VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
                                      { graphicsQueueFamilyIndex });
     memcpy(mesh.vertexBuffer.mappedMemory, vbdata.data(), vbdata.size() * sizeof(MeshVertex));
 
     mesh.indexCount = uint32_t(ibdata.size());
     mesh.indexBuffer =
-            CreateBuffer(physicalDevice, device, mesh.indexCount * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, { graphicsQueueFamilyIndex });
+            createBuffer(physicalDevice, device, mesh.indexCount * sizeof(uint32_t), VK_BUFFER_USAGE_INDEX_BUFFER_BIT, { graphicsQueueFamilyIndex });
     memcpy(mesh.indexBuffer.mappedMemory, ibdata.data(), ibdata.size() * sizeof(uint32_t));
 
     return mesh;
 }
 
-void DestroyMesh(VkDevice device, Mesh& mesh)
+void destroyMesh(VkDevice device, Mesh& mesh)
 {
-    DestroyBuffer(device, mesh.vertexBuffer);
-    DestroyBuffer(device, mesh.indexBuffer);
+    destroyBuffer(device, mesh.vertexBuffer);
+    destroyBuffer(device, mesh.indexBuffer);
 }
 
-void CreateFramebuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, VkRenderPass renderPass, VkFormat colorFormat,
+void createFramebuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkExtent2D extent, VkRenderPass renderPass, VkFormat colorFormat,
                        VkFormat depthFormat, Framebuffer& framebuffer)
 {
     VkImageCreateInfo colorBufferImageCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO };
@@ -539,7 +539,7 @@ void CreateFramebuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkExten
     colorBufferImageCreateInfo.usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     colorBufferImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     colorBufferImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    CreateImage(physicalDevice, device, colorBufferImageCreateInfo, framebuffer.colorBuffer);
+    createImage(physicalDevice, device, colorBufferImageCreateInfo, framebuffer.colorBuffer);
 
     VkImageViewCreateInfo colorBufferImageViewCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
     colorBufferImageViewCreateInfo.image = framebuffer.colorBuffer.image;
@@ -561,7 +561,7 @@ void CreateFramebuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkExten
     depthBufferImageCreateInfo.usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
     depthBufferImageCreateInfo.sharingMode = VK_SHARING_MODE_EXCLUSIVE;
     depthBufferImageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-    CreateImage(physicalDevice, device, depthBufferImageCreateInfo, framebuffer.depthBuffer);
+    createImage(physicalDevice, device, depthBufferImageCreateInfo, framebuffer.depthBuffer);
 
     VkImageViewCreateInfo depthBufferImageViewCreateInfo{ VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO };
     depthBufferImageViewCreateInfo.image = framebuffer.depthBuffer.image;
@@ -583,13 +583,13 @@ void CreateFramebuffer(VkPhysicalDevice physicalDevice, VkDevice device, VkExten
     VK_CHECK_RESULT(vkCreateFramebuffer(device, &framebufferCreateInfo, nullptr, &framebuffer.framebuffer));
 }
 
-void DestroyFramebuffer(VkDevice device, Framebuffer& framebuffer)
+void destroyFramebuffer(VkDevice device, Framebuffer& framebuffer)
 {
     vkDestroyFramebuffer(device, framebuffer.framebuffer, nullptr);
     vkDestroyImageView(device, framebuffer.depthBufferView, nullptr);
     vkDestroyImageView(device, framebuffer.colorBufferView, nullptr);
-    DestroyImage(device, framebuffer.depthBuffer);
-    DestroyImage(device, framebuffer.colorBuffer);
+    destroyImage(device, framebuffer.depthBuffer);
+    destroyImage(device, framebuffer.colorBuffer);
 }
 
 int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
@@ -601,7 +601,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     std::string objToLoad = gsWcharToUtf8(argv[1]);
     LocalFree(argv);
 
-    gs::Window* applicationWindow = gs::Window::CreateApplicationWindow("GameSmith Application", 1024, 1024);
+    gs::Window* applicationWindow = gs::Window::createApplicationWindow("GameSmith Application", 1024, 1024);
 
     if (!applicationWindow)
     {
@@ -609,18 +609,18 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         return EXIT_FAILURE;
     }
 
-    VkInstance instance = CreateInstance();
+    VkInstance instance = createInstance();
     GS_ASSERT(instance);
 
-    VkSurfaceKHR surface = CreateSurface(instance, hInstance, (HWND)applicationWindow->GetNativeHandle());
+    VkSurfaceKHR surface = createSurface(instance, hInstance, (HWND)applicationWindow->getNativeHandle());
     GS_ASSERT(surface);
 
     VkPhysicalDevice physicalDevice{};
     uint32_t graphicsQueueIndex{};
-    gs::vk::ChoosePhysicalDevice(instance, surface, physicalDevice, graphicsQueueIndex);
+    gs::vk::choosePhysicalDevice(instance, surface, physicalDevice, graphicsQueueIndex);
     GS_ASSERT(physicalDevice);
 
-    VkDevice device = gs::vk::CreateDevice(physicalDevice, graphicsQueueIndex);
+    VkDevice device = gs::vk::createDevice(physicalDevice, graphicsQueueIndex);
     GS_ASSERT(device);
 
     VkQueue graphicsQueue{};
@@ -633,21 +633,21 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     VkSemaphore renderingCompleteSemaphore = gsCreateSemaphore(device);
     GS_ASSERT(renderingCompleteSemaphore);
 
-    VkSurfaceFormatKHR surfaceFormat = ChooseSurfaceFormat(physicalDevice, surface);
+    VkSurfaceFormatKHR surfaceFormat = chooseSurfaceFormat(physicalDevice, surface);
     GS_ASSERT(surfaceFormat.format != VK_FORMAT_UNDEFINED);
 
-    VkRenderPass renderPass = CreateRenderPass(device, surfaceFormat.format, VK_FORMAT_D32_SFLOAT);
+    VkRenderPass renderPass = createRenderPass(device, surfaceFormat.format, VK_FORMAT_D32_SFLOAT);
     GS_ASSERT(renderPass);
 
-    VkCommandPool commandPool = CreateCommandPool(device, graphicsQueueIndex);
+    VkCommandPool commandPool = createCommandPool(device, graphicsQueueIndex);
     GS_ASSERT(commandPool);
 
     gs::vk::Swapchain swapchain{};
-    gs::vk::CreateSwapchain(physicalDevice, device, surface, surfaceFormat, swapchain);
+    gs::vk::createSwapchain(physicalDevice, device, surface, surfaceFormat, swapchain);
     GS_ASSERT(swapchain.swapchain);
 
-    gs::vk::ShaderModule vertexShader = gs::vk::LoadShaderModule(device, "triangle.vert.spv");
-    gs::vk::ShaderModule fragmentShader = gs::vk::LoadShaderModule(device, "triangle.frag.spv");
+    gs::vk::ShaderModule vertexShader = gs::vk::loadShaderModule(device, "triangle.vert.spv");
+    gs::vk::ShaderModule fragmentShader = gs::vk::loadShaderModule(device, "triangle.frag.spv");
 
     VkDescriptorSetLayoutBinding descriptorSetLayoutBindings[] = { { 0, VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, 1, VK_SHADER_STAGE_ALL,
                                                                      nullptr } };
@@ -666,18 +666,18 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     VkPipelineLayout pipelineLayout{};
     VK_CHECK_RESULT(vkCreatePipelineLayout(device, &pipelineLayoutCrateInfo, nullptr, &pipelineLayout));
 
-    VkPipeline pipeline = CreateGraphicsPipeline(device, renderPass, pipelineLayout, { vertexShader, fragmentShader });
+    VkPipeline pipeline = createGraphicsPipeline(device, renderPass, pipelineLayout, { vertexShader, fragmentShader });
     GS_ASSERT(pipeline);
 
     std::vector<VkCommandBuffer> commandBuffers;
     std::vector<VkFence> fences;
-    CreateFrameResources(device, swapchain, commandPool, commandBuffers, fences);
+    createFrameResources(device, swapchain, commandPool, commandBuffers, fences);
 
-    Mesh mesh = LoadObjFile(physicalDevice, device, graphicsQueueIndex, objToLoad);
+    Mesh mesh = loadObjFile(physicalDevice, device, graphicsQueueIndex, objToLoad);
 
     // Create off-screen buffer for rendering
     Framebuffer framebuffer{};
-    CreateFramebuffer(physicalDevice, device, swapchain.extent, renderPass, surfaceFormat.format, VK_FORMAT_D32_SFLOAT, framebuffer);
+    createFramebuffer(physicalDevice, device, swapchain.extent, renderPass, surfaceFormat.format, VK_FORMAT_D32_SFLOAT, framebuffer);
     GS_ASSERT(framebuffer.framebuffer);
 
     // Create descriptor pool
@@ -695,7 +695,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     // TODO: dynamic UBO, needs to be at least swapchain image count * sizeof(ShaderGlobals), assume
     // swapchain image count is always <= 4 for now because dealing with resizing is gross at the moment
     Buffer globalsBuffer =
-            CreateBuffer(physicalDevice, device, sizeof(ShaderGlobals) * 4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, { graphicsQueueIndex });
+            createBuffer(physicalDevice, device, sizeof(ShaderGlobals) * 4, VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT, { graphicsQueueIndex });
     GS_ASSERT(globalsBuffer.buffer);
 
     VkDescriptorSetAllocateInfo descriptorSetAllocateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO };
@@ -719,9 +719,9 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     writeDescriptorSet.pBufferInfo = &descriptorBufferInfo;
     vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 
-    while (applicationWindow->IsValid())
+    while (applicationWindow->isValid())
     {
-        applicationWindow->PumpMessages();
+        applicationWindow->pumpMessages();
 
         VkSurfaceCapabilitiesKHR surfaceCaps{};
         VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCaps));
@@ -729,15 +729,15 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         if (memcmp(&swapchain.extent, &surfaceCaps.currentExtent, sizeof(VkExtent2D)) != 0)
         {
             VK_CHECK_RESULT(vkDeviceWaitIdle(device));
-            DestroySwapchain(device, swapchain);
-            DestroyFrameResources(device, commandPool, commandBuffers, fences);
+            destroySwapchain(device, swapchain);
+            destroyFrameResources(device, commandPool, commandBuffers, fences);
 
-            CreateSwapchain(physicalDevice, device, surface, surfaceFormat, swapchain);
+            createSwapchain(physicalDevice, device, surface, surfaceFormat, swapchain);
             GS_ASSERT(swapchain.swapchain);
-            CreateFrameResources(device, swapchain, commandPool, commandBuffers, fences);
+            createFrameResources(device, swapchain, commandPool, commandBuffers, fences);
 
-            DestroyFramebuffer(device, framebuffer);
-            CreateFramebuffer(physicalDevice, device, swapchain.extent, renderPass, surfaceFormat.format, VK_FORMAT_D32_SFLOAT, framebuffer);
+            destroyFramebuffer(device, framebuffer);
+            createFramebuffer(physicalDevice, device, swapchain.extent, renderPass, surfaceFormat.format, VK_FORMAT_D32_SFLOAT, framebuffer);
         }
 
         uint32_t imageIndex{};
@@ -757,11 +757,11 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         float viewAspect = viewWidth / viewHeight;
 
 #if ORTHO
-        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].proj = gs::Orthographic(-viewAspect, -1.f, viewAspect, 1.f, -1.f, 1.f);
-        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].view = gs::Mat44();
+        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].proj = gs::orthographic(-viewAspect, -1.f, viewAspect, 1.f, -1.f, 1.f);
+        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].view = gs::mat44();
 #else
-        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].proj = gs::Perspective(gs::DegToRad(60.f), viewAspect, 0.1f, 100.f);
-        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].view = gs::LookAt( {1.f, 0.5f, 1.f}, {0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
+        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].proj = gs::perspective(gs::degToRad(60.f), viewAspect, 0.1f, 100.f);
+        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].view = gs::lookAt( {-1.f, 0.5f, 1.f}, {0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
 #endif
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 1, &dynamicOffset);
@@ -873,14 +873,14 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
 
     VK_CHECK_RESULT(vkDeviceWaitIdle(device));
 
-    DestroyMesh(device, mesh);
+    destroyMesh(device, mesh);
 
-    DestroyBuffer(device, globalsBuffer);
+    destroyBuffer(device, globalsBuffer);
     vkDestroyDescriptorPool(device, descriptorPool, nullptr);
 
-    DestroyFramebuffer(device, framebuffer);
-    DestroyFrameResources(device, commandPool, commandBuffers, fences);
-    DestroySwapchain(device, swapchain);
+    destroyFramebuffer(device, framebuffer);
+    destroyFrameResources(device, commandPool, commandBuffers, fences);
+    destroySwapchain(device, swapchain);
     vkDestroyPipeline(device, pipeline, nullptr);
     vkDestroyPipelineLayout(device, pipelineLayout, nullptr);
     vkDestroyDescriptorSetLayout(device, descriptorSetLayout, nullptr);

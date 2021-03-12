@@ -22,7 +22,7 @@ constexpr Vec4::Vec4(float x_, float y_, float z_, float w_)
 {
 }
 
-Vec4::Vec4(const Vec3& u, float w_)
+Vec4::Vec4(const vec3& u, float w_)
     : Vec4(u.x, u.y, u.z, w_)
 {
 }
@@ -100,12 +100,12 @@ Vec4& Vec4::operator/=(float s)
     return *this;
 }
 
-float Vec4::Length() const
+float Vec4::length() const
 {
     return std::sqrt(x * x + y * y + z * z + w * w);
 }
 
-float Vec4::LengthSq() const
+float Vec4::lengthSq() const
 {
     return x * x + y * y + z * z + w * w;
 }
@@ -156,14 +156,14 @@ Vec4 operator*(float s, const Vec4& u)
     return Vec4{ u.x * s, u.y * s, u.z * s, u.w * s };
 }
 
-Vec4 Normalize(const Vec4& u)
+Vec4 normalize(const Vec4& u)
 {
     float m = std::sqrt(u.x * u.x + u.y * u.y + u.z * u.z + u.w * u.w);
     float s = 1.0f / m;
     return Vec4{ u.x * s, u.y * s, u.z * s, u.w * s };
 }
 
-float Dot(const Vec4& u, const Vec4& v)
+float dot(const Vec4& u, const Vec4& v)
 {
     return u.x * v.x + u.y * v.y + u.z * v.z + u.w * v.w;
 }

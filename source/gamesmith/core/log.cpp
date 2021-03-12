@@ -10,7 +10,7 @@
 namespace gs
 {
 
-void Log::Print(const char* format, ...)
+void Log::print(const char* format, ...)
 {
     static std::string buffer;
     static size_t buffer_size = 128;

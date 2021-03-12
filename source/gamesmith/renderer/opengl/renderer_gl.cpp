@@ -30,7 +30,7 @@ struct WglHelper
     PFNWGLMAKECURRENT MakeCurrent = nullptr;
     PFNWGLSWAPINTERVALEXTPROC SwapInterval = nullptr;
 
-    bool Load()
+    bool load()
     {
         if (libgl)
         {
@@ -79,7 +79,7 @@ struct WglHelper
 
 struct DwmHelper
 {
-    bool Load()
+    bool load()
     {
         if (dwm)
         {
@@ -381,11 +381,11 @@ static void APIENTRY DebugMessageCallback(GLenum source, GLenum type, GLuint id,
 namespace gs
 {
 
-bool RendererGL::Init(const Window* window)
+bool RendererGL::init(const Window* window)
 {
-    HWND hwnd = (HWND)window->GetNativeHandle();
+    HWND hwnd = (HWND)window->getNativeHandle();
 
-    if (!(gDwmHelper.Load() && gWglHelper.Load()))
+    if (!(gDwmHelper.load() && gWglHelper.load()))
     {
         return false;
     }
@@ -521,11 +521,11 @@ bool RendererGL::Init(const Window* window)
     return true;
 }
 
-void RendererGL::BeginFrame()
+void RendererGL::beginFrame()
 {
 }
 
-void RendererGL::EndFrame()
+void RendererGL::endFrame()
 {
     SwapBuffers(dc_);
 }

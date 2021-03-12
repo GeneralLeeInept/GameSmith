@@ -39,7 +39,7 @@ VkShaderStageFlagBits ShaderStage(SpvExecutionModel executionModel)
     }
 }
 
-ShaderModule LoadShaderModule(VkDevice device, const std::string& path)
+ShaderModule loadShaderModule(VkDevice device, const std::string& path)
 {
     ShaderModule module{};
 

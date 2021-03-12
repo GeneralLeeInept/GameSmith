@@ -32,7 +32,7 @@ struct ObjFile
     std::vector<ObjNormal> normals;
     std::vector<ObjTri> triangles;
 
-    bool Load(const std::string& path);
+    bool load(const std::string& path);
 };
 
 }

@@ -13,7 +13,7 @@ namespace gs
 
 ATOM PlatformWindow::wnd_class_{};
 
-Window* Window::CreateApplicationWindow(const std::string& title, uint32_t width, uint32_t height)
+Window* Window::createApplicationWindow(const std::string& title, uint32_t width, uint32_t height)
 {
     if (PlatformWindow::wnd_class_ == 0)
     {
@@ -61,27 +61,27 @@ Window* Window::CreateApplicationWindow(const std::string& title, uint32_t width
     SetWindowPos(window->hwnd_, 0, x, y, 0, 0, SWP_NOZORDER | SWP_NOSIZE);
     ShowWindow(window->hwnd_, SW_SHOW);
 
-    window->PumpMessages();
+    window->pumpMessages();
 
     return window;
 }
 
-bool PlatformWindow::IsValid() const
+bool PlatformWindow::isValid() const
 {
     return !wantClose_;
 }
 
-uint32_t PlatformWindow::GetWidth() const
+uint32_t PlatformWindow::getWidth() const
 {
     return width_;
 }
 
-uint32_t PlatformWindow::GetHeight() const
+uint32_t PlatformWindow::getHeight() const
 {
     return height_;
 }
 
-void PlatformWindow::PumpMessages()
+void PlatformWindow::pumpMessages()
 {
     MSG msg{};
 
@@ -92,7 +92,7 @@ void PlatformWindow::PumpMessages()
     }
 }
 
-Window::NativeHandle PlatformWindow::GetNativeHandle() const
+Window::NativeHandle PlatformWindow::getNativeHandle() const
 {
     return (NativeHandle)hwnd_;
 }

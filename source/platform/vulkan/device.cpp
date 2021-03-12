@@ -12,7 +12,7 @@ namespace gs
 namespace vk
 {
 
-void ChoosePhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice, uint32_t& graphicsQueueIndex)
+void choosePhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalDevice& physicalDevice, uint32_t& graphicsQueueIndex)
 {
     physicalDevice = VK_NULL_HANDLE;
 
@@ -91,7 +91,7 @@ void ChoosePhysicalDevice(VkInstance instance, VkSurfaceKHR surface, VkPhysicalD
     }
 }
 
-VkDevice CreateDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueIndex)
+VkDevice createDevice(VkPhysicalDevice physicalDevice, uint32_t graphicsQueueIndex)
 {
     float queuePriority = 1.0f;
     VkDeviceQueueCreateInfo queueCreateInfo{ VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO };

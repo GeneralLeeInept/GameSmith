@@ -10,7 +10,7 @@ namespace gs
 {
 namespace vk
 {
-VkSwapchainKHR CreateSwapchain(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkSurfaceFormatKHR surfaceFormat)
+VkSwapchainKHR createSwapchain(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, VkDevice device, VkSurfaceFormatKHR surfaceFormat)
 {
     VkSurfaceCapabilitiesKHR surfaceCaps{};
     VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCaps));
@@ -35,9 +35,9 @@ VkSwapchainKHR CreateSwapchain(VkPhysicalDevice physicalDevice, VkSurfaceKHR sur
     return swapchain;
 }
 
-bool CreateSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat, Swapchain& swapchain)
+bool createSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurfaceKHR surface, VkSurfaceFormatKHR surfaceFormat, Swapchain& swapchain)
 {
-    swapchain.swapchain = CreateSwapchain(physicalDevice, surface, device, surfaceFormat);
+    swapchain.swapchain = createSwapchain(physicalDevice, surface, device, surfaceFormat);
 
     if (!swapchain.swapchain)
     {
@@ -70,7 +70,7 @@ bool CreateSwapchain(VkPhysicalDevice physicalDevice, VkDevice device, VkSurface
     return true;
 }
 
-void DestroySwapchain(VkDevice device, Swapchain& swapchain)
+void destroySwapchain(VkDevice device, Swapchain& swapchain)
 {
     for (VkImageView& imageView : swapchain.imageViews)
     {

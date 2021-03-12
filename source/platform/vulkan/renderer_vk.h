@@ -12,10 +12,10 @@ class RendererVk
 public:
     static RendererVk* Create() { return nullptr; }
 
-    bool Init(const Window* window) { return false; }
+    bool init(const Window* window) { return false; }
 
-    void BeginFrame() {}
-    void EndFrame() {}
+    void beginFrame() {}
+    void endFrame() {}
 };
 
 } // namespace GameSmith

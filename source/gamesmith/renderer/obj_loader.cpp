@@ -74,7 +74,7 @@ inline void ReadVertexIndices(const char*& c, int32_t& vi, int32_t& vti, int32_t
     }
 }
 
-bool ObjFile::Load(const std::string& path)
+bool ObjFile::load(const std::string& path)
 {
     std::ifstream fs(path, std::ios::in);
     std::string s;

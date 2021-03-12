@@ -12,16 +12,16 @@ public:
 
     virtual ~Window() = default;
 
-    virtual bool IsValid() const = 0;
+    virtual bool isValid() const = 0;
 
-    virtual uint32_t GetWidth() const = 0;
-    virtual uint32_t GetHeight() const = 0;
+    virtual uint32_t getWidth() const = 0;
+    virtual uint32_t getHeight() const = 0;
 
-    virtual void PumpMessages() = 0;
+    virtual void pumpMessages() = 0;
 
-    virtual NativeHandle GetNativeHandle() const = 0;
+    virtual NativeHandle getNativeHandle() const = 0;
 
-    static Window* CreateApplicationWindow(const std::string& title, uint32_t width, uint32_t height);
+    static Window* createApplicationWindow(const std::string& title, uint32_t width, uint32_t height);
 };
 
 } // namespace GameSmith
