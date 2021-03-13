@@ -13,9 +13,9 @@
 #define GS_VULKAN_VALIDATION 0
 #endif
 
-#define VK_CHECK_RESULT(call)            \
-    do                                   \
-    {                                    \
-        VkResult result = (call);        \
-        GS_ASSERT(result == VK_SUCCESS); \
+#define VK_CHECK_RESULT(call)        \
+    do                               \
+    {                                \
+        VkResult r_ = call;          \
+        GS_ASSERT(r_ == VK_SUCCESS); \
     } while (0)

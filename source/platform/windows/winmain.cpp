@@ -15,6 +15,9 @@
 
 #include <filesystem>
 #include <fstream>
+#include <imgui.h>
+#include <backends/imgui_impl_win32.h>
+#include <backends/imgui_impl_vulkan.h>
 
 #define ORTHO 0
 
@@ -286,7 +289,7 @@ VkPipeline createGraphicsPipeline(VkDevice device, VkRenderPass renderPass, VkPi
 
     VkPipelineRasterizationStateCreateInfo rasterizationState{ VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO };
     rasterizationState.polygonMode = VK_POLYGON_MODE_FILL;
-    rasterizationState.cullMode = VK_CULL_MODE_NONE;//VK_CULL_MODE_BACK_BIT;
+    rasterizationState.cullMode = VK_CULL_MODE_NONE; //VK_CULL_MODE_BACK_BIT;
     rasterizationState.frontFace = VK_FRONT_FACE_COUNTER_CLOCKWISE;
     rasterizationState.lineWidth = 1.0f;
 
@@ -592,6 +595,112 @@ void destroyFramebuffer(VkDevice device, Framebuffer& framebuffer)
     destroyImage(device, framebuffer.colorBuffer);
 }
 
+struct ImguiData
+{
+    VkDescriptorPool descriptorPool;
+    VkRenderPass renderPass;
+};
+
+ImguiData initImgui(gs::Window* window, VkInstance instance, VkPhysicalDevice physicalDevice, VkDevice device, uint32_t queueFamily, VkQueue queue,
+                    VkFormat colorBufferFormat, VkFormat depthBufferFormat, VkCommandBuffer commandBuffer)
+{
+    ImguiData result{};
+
+    IMGUI_CHECKVERSION();
+    ImGui::CreateContext();
+    ImGuiIO& io = ImGui::GetIO();
+    io.ConfigFlags |= ImGuiConfigFlags_DockingEnable;
+    io.Fonts->AddFontDefault();
+    ImGui::StyleColorsDark();
+    ImGui_ImplWin32_Init((void*)window->getNativeHandle());
+
+    VkDescriptorPoolSize poolSizes[] = { { VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1 } };
+    VkDescriptorPoolCreateInfo descriptorPoolCreateInfo{ VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO };
+    descriptorPoolCreateInfo.maxSets = 1;
+    descriptorPoolCreateInfo.poolSizeCount = GS_ARRAY_COUNT(poolSizes);
+    descriptorPoolCreateInfo.pPoolSizes = poolSizes;
+    VK_CHECK_RESULT(vkCreateDescriptorPool(device, &descriptorPoolCreateInfo, nullptr, &result.descriptorPool));
+
+    VkAttachmentDescription attachments[2]{};
+    attachments[0].format = colorBufferFormat;
+    attachments[0].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[0].loadOp = VK_ATTACHMENT_LOAD_OP_LOAD;
+    attachments[0].storeOp = VK_ATTACHMENT_STORE_OP_STORE;
+    attachments[0].initialLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    attachments[0].finalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    attachments[1].format = depthBufferFormat;
+    attachments[1].samples = VK_SAMPLE_COUNT_1_BIT;
+    attachments[1].loadOp = VK_ATTACHMENT_LOAD_OP_DONT_CARE;
+    attachments[1].storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    attachments[1].initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    attachments[1].finalLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference colorAttachments[1]{};
+    colorAttachments[0].attachment = 0;
+    colorAttachments[0].layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+
+    VkAttachmentReference depthStencilAttachment{};
+    depthStencilAttachment.attachment = 1;
+    depthStencilAttachment.layout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+
+    VkSubpassDescription subpasses[1]{};
+    subpasses[0].pipelineBindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    subpasses[0].colorAttachmentCount = GS_ARRAY_COUNT(colorAttachments);
+    subpasses[0].pColorAttachments = colorAttachments;
+    subpasses[0].pDepthStencilAttachment = &depthStencilAttachment;
+
+    VkRenderPassCreateInfo renderPassCreateInfo{ VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO };
+    renderPassCreateInfo.attachmentCount = GS_ARRAY_COUNT(attachments);
+    renderPassCreateInfo.pAttachments = attachments;
+    renderPassCreateInfo.subpassCount = GS_ARRAY_COUNT(subpasses);
+    renderPassCreateInfo.pSubpasses = subpasses;
+    VK_CHECK_RESULT(vkCreateRenderPass(device, &renderPassCreateInfo, nullptr, &result.renderPass));
+
+    ImGui_ImplVulkan_InitInfo initInfo{};
+    initInfo.Instance = instance;
+    initInfo.PhysicalDevice = physicalDevice;
+    initInfo.Device = device;
+    initInfo.QueueFamily = queueFamily;
+    initInfo.Queue = queue;
+    //initInfo.PipelineCache;
+    initInfo.DescriptorPool = result.descriptorPool;
+    initInfo.Subpass = 0;
+    initInfo.MinImageCount = 2; // TODO: swapchain dependent?
+    initInfo.ImageCount = 2;    // TODO:
+    initInfo.MSAASamples = VK_SAMPLE_COUNT_1_BIT;
+    //initInfo.Allocator;
+    //initInfo.err;
+
+    ImGui_ImplVulkan_Init(&initInfo, result.renderPass);
+
+    // Upload font
+    VkCommandBufferBeginInfo beginInfo{ VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO };
+    beginInfo.flags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+    VK_CHECK_RESULT(vkBeginCommandBuffer(commandBuffer, &beginInfo));
+    ImGui_ImplVulkan_CreateFontsTexture(commandBuffer);
+    VK_CHECK_RESULT(vkEndCommandBuffer(commandBuffer));
+
+    VkSubmitInfo submitInfo{ VK_STRUCTURE_TYPE_SUBMIT_INFO };
+    submitInfo.commandBufferCount = 1;
+    submitInfo.pCommandBuffers = &commandBuffer;
+    VK_CHECK_RESULT(vkQueueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+
+    VK_CHECK_RESULT(vkDeviceWaitIdle(device));
+    ImGui_ImplVulkan_DestroyFontUploadObjects();
+
+    return result;
+}
+
+void destroyImgui(VkDevice device, ImguiData& data)
+{
+    ImGui_ImplVulkan_Shutdown();
+    vkDestroyRenderPass(device, data.renderPass, nullptr);
+    vkDestroyDescriptorPool(device, data.descriptorPool, nullptr);
+    ImGui_ImplWin32_Shutdown();
+    ImGui::DestroyContext();
+}
+
 int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLine, int nCmdShow)
 {
     ComHelper comHelper;
@@ -719,9 +828,32 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     writeDescriptorSet.pBufferInfo = &descriptorBufferInfo;
     vkUpdateDescriptorSets(device, 1, &writeDescriptorSet, 0, nullptr);
 
+    ImguiData imguiData = initImgui(applicationWindow, instance, physicalDevice, device, graphicsQueueIndex, graphicsQueue, surfaceFormat.format,
+                                    VK_FORMAT_D32_SFLOAT, commandBuffers[0]);
+
     while (applicationWindow->isValid())
     {
         applicationWindow->pumpMessages();
+
+        // IMGUI HACKING
+        POINT cursor_pos;
+        GetCursorPos(&cursor_pos);
+        ImGuiIO& io = ImGui::GetIO();
+        io.MousePos.x = float(cursor_pos.x);
+        io.MousePos.y = float(cursor_pos.y);
+        io.MouseDown[0] = GetKeyState(VK_LBUTTON) & 0x8000;
+        io.MouseDown[1] = GetKeyState(VK_RBUTTON) & 0x8000;
+        ImGui_ImplVulkan_NewFrame();
+        ImGui_ImplWin32_NewFrame();
+        ImGui::NewFrame();
+        ImGui::DockSpaceOverViewport(ImGui::GetMainViewport());
+        bool show_demo_window = true;
+        ImGui::ShowDemoWindow(&show_demo_window);
+        ImGui::Begin("Another Window");
+        ImGui::End();
+
+        ImGui::Render();
+        ////////////////
 
         VkSurfaceCapabilitiesKHR surfaceCaps{};
         VK_CHECK_RESULT(vkGetPhysicalDeviceSurfaceCapabilitiesKHR(physicalDevice, surface, &surfaceCaps));
@@ -761,7 +893,7 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].view = gs::mat44();
 #else
         ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].proj = gs::perspective(gs::degToRad(60.f), viewAspect, 0.1f, 100.f);
-        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].view = gs::lookAt( {-1.f, 0.5f, 1.f}, {0.f, 0.f, 0.f}, {0.f, 1.f, 0.f});
+        ((ShaderGlobals*)globalsBuffer.mappedMemory)[imageIndex].view = gs::lookAt({ -1.f, 0.5f, 1.f }, { 0.f, 0.f, 0.f }, { 0.f, 1.f, 0.f });
 #endif
 
         vkCmdBindDescriptorSets(commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout, 0, 1, &descriptorSet, 1, &dynamicOffset);
@@ -792,6 +924,14 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
         vkCmdBindIndexBuffer(commandBuffer, mesh.indexBuffer.buffer, 0, VK_INDEX_TYPE_UINT32);
         vkCmdDrawIndexed(commandBuffer, mesh.indexCount, 1, 0, 0, 0);
 
+        vkCmdEndRenderPass(commandBuffer);
+
+        renderPassBeginInfo = { VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO };
+        renderPassBeginInfo.renderPass = imguiData.renderPass;
+        renderPassBeginInfo.framebuffer = framebuffer.framebuffer;
+        renderPassBeginInfo.renderArea.extent = swapchain.extent;
+        vkCmdBeginRenderPass(commandBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
+        ImGui_ImplVulkan_RenderDrawData(ImGui::GetDrawData(), commandBuffer);
         vkCmdEndRenderPass(commandBuffer);
 
         VkImageMemoryBarrier copyBarriers[2]{};
@@ -872,6 +1012,8 @@ int wWinMainInternal(HINSTANCE hInstance, HINSTANCE hPrevInstance, PWSTR pCmdLin
     }
 
     VK_CHECK_RESULT(vkDeviceWaitIdle(device));
+
+    destroyImgui(device, imguiData);
 
     destroyMesh(device, mesh);
 

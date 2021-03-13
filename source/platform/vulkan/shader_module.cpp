@@ -7,13 +7,6 @@
 
 #include <spirv-headers/spirv.h>
 
-#define VK_CHECK_RESULT(call)            \
-    do                                   \
-    {                                    \
-        VkResult result = (call);        \
-        GS_ASSERT(result == VK_SUCCESS); \
-    } while (0)
-
 namespace gs
 {
 namespace vk
